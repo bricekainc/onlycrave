@@ -1,6 +1,6 @@
-# Fansnub
+# Onlycrave
 
-**Fansnub** is a modern platform designed to empower creators, influencers, and performers to connect directly with their most loyal fans. It provides a subscription-based model that allows fans to support creators while gaining access to exclusive content, perks, and experiences.
+**Onlycrave** is a modern platform designed to empower creators, influencers, and performers to connect directly with their most loyal fans. It provides a subscription-based model that allows fans to support creators while gaining access to exclusive content, perks, and experiences.
 
 ---
 
@@ -25,13 +25,13 @@
 
 ## 🔒 Privacy and Safety
 
-Fansnub prioritizes user privacy with strict moderation policies and comprehensive content control tools. Creators maintain full ownership of their content, and all user data is securely stored.
+Onlycrave prioritizes user privacy with strict moderation policies and comprehensive content control tools. Creators maintain full ownership of their content, and all user data is securely stored.
 
 ---
 
 ## 🚀 For Creators
 
-Fansnub gives creators full autonomy over how they engage with fans. Whether you're a musician, model, gamer, educator, or artist, the platform supports various content types and monetization strategies.
+Onlycrave gives creators full autonomy over how they engage with fans. Whether you're a musician, model, gamer, educator, or artist, the platform supports various content types and monetization strategies.
 
 - Build and grow your fanbase  
 - Monetize exclusive offerings  
@@ -41,7 +41,7 @@ Fansnub gives creators full autonomy over how they engage with fans. Whether you
 
 ## 🧑‍🤝‍🧑 For Fans
 
-Join your favorite creators’ inner circles and get more of the content you love. Subscribing on Fansnub means supporting creators directly and enjoying content not available anywhere else.
+Join your favorite creators’ inner circles and get more of the content you love. Subscribing on Onlycrave means supporting creators directly and enjoying content not available anywhere else.
 
 - Access premium, unreleased content  
 - Support creators directly  
@@ -51,15 +51,15 @@ Join your favorite creators’ inner circles and get more of the content you lov
 
 ## 📱 Mobile-Optimized
 
-Fansnub is fully responsive and mobile-friendly, ensuring seamless experiences across devices. Whether you're on iOS, Android, or desktop, managing your account and content is intuitive and fast.
+Onlycrave is fully responsive and mobile-friendly, ensuring seamless experiences across devices. Whether you're on iOS, Android, or desktop, managing your account and content is intuitive and fast.
 
 ---
 
 ## 🌐 Learn More
 
-Visit [https://www.fansnub.com](https://www.fansnub.com) to explore creators or start building your own community.
+Visit [https://www.onlycrave.com](https://www.onlycrave.com) to explore creators or start building your own community.
 
-# Fansnub Bot
+# Onlycrave Bot
 
 A Telegram bot that monitors RSS feeds and notifies users of new posts.
 
