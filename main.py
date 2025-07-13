@@ -35,7 +35,7 @@ awaiting_search_input = set()
 
 @web_app.get("/")
 def read_root():
-    return {"status": "Fansnub Bot is running"}
+    return {"status": "Onlycrave Bot is running"}
 
 
 # --- Telegram Bot Handlers ---
@@ -44,11 +44,11 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     keyboard = [
         [InlineKeyboardButton("🌟 Show Today's Featured Creator", callback_data="featured_creator")],
         [InlineKeyboardButton("📰 Show All Posts", callback_data="list_posts_0")],
-        [InlineKeyboardButton("🔍 Search Fansnub", callback_data="search_start")],
+        [InlineKeyboardButton("🔍 Search Onlycrave", callback_data="search_start")],
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
     await update.message.reply_text(
-        "👋 Welcome to the Fansnub Bot!\n"
+        "👋 Welcome to the Onlycrave Bot!\n"
         "Browse creators and read blog posts.\n\n"
         "📌 Available commands:\n"
         "/post <keyword> – Find a blog post\n"
@@ -121,7 +121,7 @@ async def handle_search_input(update: Update, context: ContextTypes.DEFAULT_TYPE
     if not creators and not posts:
         await update.message.reply_text(
             f"🚫 No results found for '{keyword}'.\n\n"
-            "🧭 You can try searching directly on https://fansnub.com or contact support at https://support.briceka.com"
+            "🧭 You can try searching directly on https://onlycrave.com or contact support at https://support.briceka.com"
         )
         return
 
