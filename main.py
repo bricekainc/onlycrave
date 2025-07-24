@@ -33,9 +33,19 @@ BOT = Bot(token=BOT_TOKEN)
 awaiting_search_input = set()
 
 
-@web_app.get("/")
-def read_root():
-    return {"status": "Onlycrave Bot is running"}
+import httpx
+from fastapi.responses import HTMLResponse
+
+@web_app.get("/", response_class=HTMLResponse)
+async def read_root():
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get("https://onlycrave.com")
+            return HTMLResponse(content=response.text, status_code=response.status_code)
+    except Exception as e:
+        logger.error(f"❌ Failed to fetch OnlyCrave homepage: {e}")
+        return HTMLResponse(content="<h1>⚠️ Unable to load OnlyCrave.com</h1>", status_code=502)
+
 
 
 # --- Telegram Bot Handlers ---
