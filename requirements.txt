@@ -5,3 +5,4 @@ feedparser==6.0.11
 fastapi==0.110.0
 uvicorn==0.29.0
 httpx>=0.25.2,<0.28
+gunicorn==20.1.0
