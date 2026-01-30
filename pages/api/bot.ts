@@ -1,5 +1,5 @@
 import { Telegraf, Markup } from 'telegraf';
-import { getCreators } from '../../lib/fetchCreators';
+import { getCreators } from '../../lib/getCreators';
 
 const bot = new Telegraf(process.env.BOT_TOKEN || '');
 
