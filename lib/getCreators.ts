@@ -16,7 +16,7 @@ export async function getCreators() {
         username: usernameMatch ? usernameMatch[1] : '',
         link: item.link || '',
         description: item.contentSnippet?.split('Click here')[0].trim() || '',
-        avatar: (item as any).thumbnail?.$?.url || 'https://onlycrave.com/public/uploads/settings/logo.png'
+        avatar: (item as any).thumbnail?.$?.url || 'https://onlycrave.com/public/img/home_index.svg'
       };
     });
   } catch (error) {
