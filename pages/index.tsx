@@ -1,4 +1,4 @@
-import { getCreators } from '../lib/getCreators';
+import { getCreators } from '../lib/fetchCreators';
 
 export async function getServerSideProps() {
   const creators = await getCreators();
@@ -7,21 +7,15 @@ export async function getServerSideProps() {
 
 export default function Home({ creators }: { creators: any[] }) {
   return (
-    <div style={{ backgroundColor: '#0b0e11', minHeight: '100vh', color: 'white', padding: '2rem' }}>
-      <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
-        <h1 style={{ color: '#0102FD', fontSize: '2.5rem', fontWeight: 'bold' }}>OnlyCrave Hub</h1>
-        <p>Discover elite verified creators</p>
-      </header>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '20px' }}>
-        {creators.map((c) => (
-          <div key={c.username} style={{ background: '#1a1d21', borderRadius: '15px', padding: '15px', textAlign: 'center', border: '1px solid #333' }}>
-            <img src={c.avatar} alt={c.name} style={{ width: '100px', height: '100px', borderRadius: '50%', margin: '0 auto 15px', border: '3px solid #0102FD' }} />
-            <h3 style={{ margin: '10px 0' }}>{c.name}</h3>
-            <p style={{ fontSize: '0.8rem', color: '#ccc', height: '60px', overflow: 'hidden' }}>{c.description}</p>
-            <a href={c.link} target="_blank" style={{ display: 'block', backgroundColor: '#0102FD', color: 'white', padding: '10px', borderRadius: '8px', marginTop: '15px', textDecoration: 'none', fontWeight: 'bold' }}>
-              View Profile
-            </a>
+    <div style={{ backgroundColor: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif', padding: '40px 20px' }}>
+      <h1 style={{ color: '#0102FD', textAlign: 'center', fontSize: '2.5rem' }}>OnlyCrave Discovery</h1>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '25px', marginTop: '40px' }}>
+        {creators.map(c => (
+          <div key={c.username} style={{ background: '#111', borderRadius: '15px', padding: '20px', border: '1px solid #222', textAlign: 'center' }}>
+            <img src={c.avatar} style={{ width: '120px', height: '120px', borderRadius: '50%', border: '3px solid #0102FD', marginBottom: '15px' }} />
+            <h3>{c.name}</h3>
+            <p style={{ color: '#888', fontSize: '0.9rem', margin: '15px 0' }}>{c.description.substring(0, 100)}...</p>
+            <a href={c.link} style={{ display: 'inline-block', padding: '10px 25px', backgroundColor: '#0102FD', color: '#fff', borderRadius: '25px', textDecoration: 'none', fontWeight: 'bold' }}>View Profile</a>
           </div>
         ))}
       </div>
