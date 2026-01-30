@@ -1,0 +1,11 @@
+{
+  "name": "onlycrave-bot-hub",
+  "version": "1.0.0",
+  "dependencies": {
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "rss-parser": "^3.13.0",
+    "telegraf": "^4.16.3"
+  }
+}
