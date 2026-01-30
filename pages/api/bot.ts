@@ -1,39 +1,28 @@
 import { Telegraf, Markup } from 'telegraf';
-import { getCreators } from '../../lib/getCreators';
+import { getCreators } from '../../lib/fetchCreators';
 
-const bot = new Telegraf(process.env.BOT_TOKEN!);
+const bot = new Telegraf(process.env.BOT_TOKEN || '');
 
-// We use a webhook handler for Vercel
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') {
-    return res.status(405).send('Method Not Allowed');
-  }
+  if (req.method !== 'POST') return res.status(405).send('Use POST');
 
-  bot.start(async (ctx) => {
-    await ctx.replyWithPhoto(
-      'https://onlycrave.com/public/uploads/settings/logo.png', 
-      {
-        caption: "Welcome to the **OnlyCrave Discovery Bot**\n\nFind your favorite creators below.",
-        parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([
-          [Markup.button.callback('🔥 Discover Creators', 'list_creators')],
-          [Markup.button.url('🌐 Open Web App', 'https://your-app.vercel.app')]
-        ])
-      }
+  bot.start((ctx) => {
+    ctx.replyWithMarkdownV2(
+      "Welcome to the *OnlyCrave Discovery Bot*\\!\n\nTap below to see trending creators\\.",
+      Markup.inlineKeyboard([
+        [Markup.button.callback('🔥 Discover Now', 'list_creators')]
+      ])
     );
   });
 
   bot.action('list_creators', async (ctx) => {
     const creators = await getCreators();
-    const topCreators = creators.slice(0, 5); // Show first 5
-
-    for (const c of topCreators) {
+    // We send the first 3 creators to avoid hitting Telegram rate limits
+    for (const c of creators.slice(0, 3)) {
       await ctx.replyWithPhoto(c.avatar, {
         caption: `*${c.name}*\n${c.description}`,
         parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([
-          [Markup.button.url('✨ View Profile', c.link)]
-        ])
+        ...Markup.inlineKeyboard([[Markup.button.url('✨ View Profile', c.link)]])
       });
     }
   });
@@ -42,7 +31,6 @@ export default async function handler(req: any, res: any) {
     await bot.handleUpdate(req.body);
     res.status(200).send('OK');
   } catch (err) {
-    console.error(err);
-    res.status(500).send('Error');
+    res.status(500).send('Bot Error');
   }
 }
