@@ -113,7 +113,7 @@ export default function Home({ creators }: { creators: any[] }) {
               <img src={c.avatar} alt={c.name} style={{ width: '100px', height: '100px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${theme.secondary}`, marginBottom: '15px' }} />
               <h3 style={{ margin: '0 0 5px 0' }}>{c.name}</h3>
               <p style={{ color: theme.primary, fontWeight: 'bold', fontSize: '0.9rem', marginBottom: '15px' }}>@{c.username}</p>
-              <button onClick={() => handleViewProfile(c)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: theme.accent, color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>View & Subscribe</button>
+              <button onClick={() => window.location.href = `/${c.username}`} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: theme.accent, color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>View & Subscribe</button>
             </div>
           ))}
         </div>
