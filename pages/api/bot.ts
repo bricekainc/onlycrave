@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
     );
   });
 
-  bot.on('text', async (ctx) => {
+bot.on('text', async (ctx) => {
     const text = ctx.message.text;
     const query = text.trim().toLowerCase();
 
@@ -50,12 +50,23 @@ export default async function handler(req: any, res: any) {
     }
 
     await ctx.reply(`🔍 Found ${results.length} results:`);
+    
     for (const c of results.slice(0, 5)) {
+      // THE CHANGE IS HERE:
+      // We use backticks to inject the creator's username into your Vercel URL
+      const profileUrl = `https://onlycrave.vercel.app/${c.username}`;
+
       await ctx.replyWithPhoto(c.avatar, {
         caption: `*${c.name}*\n@${c.username}`,
         parse_mode: 'Markdown',
-        ...Markup.inlineKeyboard([[Markup.button.url('✨ View Profile', c.link)]])
+        ...Markup.inlineKeyboard([
+          [Markup.button.url('✨ View Profile', profileUrl)]
+        ])
       });
+    }
+
+    if (results.length > 5) {
+      await ctx.reply(`And ${results.length - 5} more results. Visit the website to see them all!`);
     }
   });
 
