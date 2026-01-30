@@ -54,6 +54,7 @@ export default function CreatorProfile({ creator }: { creator: any }) {
         <div style={{ backgroundColor: theme.card, padding: '30px', borderRadius: '20px', border: `1px solid ${theme.blue}` }}>
           <h3 style={{ color: theme.blue }}>How to Subscribe</h3>
           <ul style={{ lineHeight: '2', opacity: 0.9 }}>
+            <li>You can subscribe via PayPal, Card or Mpesa directly by login in with your <strong>OnlyCrave</strong> account and clicking the Subscribe button on the creators profile, or manually via wallet:</li>
             <li>1. Login to your <strong>OnlyCrave</strong> account.</li>
             <li>2. Go to your <strong>Wallet</strong> and click Deposit.</li>
             <li>3. Choose your preferred gateway: 
