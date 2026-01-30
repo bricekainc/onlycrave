@@ -1,4 +1,4 @@
-import { getCreators } from '../lib/fetchCreators';
+import { getCreators } from '../lib/getCreators'; // Use one dot-dot here
 
 export async function getServerSideProps() {
   const creators = await getCreators();
