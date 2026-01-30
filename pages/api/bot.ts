@@ -1,50 +1,53 @@
 import { Telegraf, Markup } from 'telegraf';
-import { getCreators } from '../../lib/getCreators';
+import { getCreators } from '../../lib/fetchCreators';
 
 const bot = new Telegraf(process.env.BOT_TOKEN || '');
 
 export default async function handler(req: any, res: any) {
-  if (req.method !== 'POST') return res.status(405).send('Use POST');
+  if (req.method !== 'POST') return res.status(405).send('POST only');
 
   bot.start((ctx) => {
     ctx.replyWithMarkdownV2(
-      "Welcome to the *OnlyCrave Search Bot*\\!\n\nType any letter \\(e\\.g\\., 'A'\\) to see creators starting with that letter, or type a name to search\\.",
+      "Welcome to the *OnlyCrave Search Bot*\\!\n\nType any **letter** to see creators starting with that letter\\, or type a **name** to search\\.",
       Markup.inlineKeyboard([
         [Markup.button.url('🌐 Open Full Directory', 'https://onlycrave.vercel.app')]
       ])
     );
   });
 
-  // Listener for any text message
   bot.on('text', async (ctx) => {
-    const userInput = ctx.message.text.trim().toLowerCase();
+    const query = ctx.message.text.trim().toLowerCase();
     const creators = await getCreators();
 
-    // Logic: If it's one letter, find by first letter. If more, search name.
+    // Search Logic:
+    // If input is 1 character: Match by first letter
+    // If input is longer: Search name and username
     const results = creators.filter(c => {
-      if (userInput.length === 1) {
-        return c.name.toLowerCase().startsWith(userInput);
+      if (query.length === 1) {
+        return c.name.toLowerCase().startsWith(query);
       }
-      return c.name.toLowerCase().includes(userInput) || c.username.toLowerCase().includes(userInput);
+      return c.name.toLowerCase().includes(query) || c.username.toLowerCase().includes(query);
     });
 
     if (results.length === 0) {
       return ctx.reply(`No creators found for "${ctx.message.text}". Try another letter!`);
     }
 
-    await ctx.reply(`Found ${results.length} creators:`);
+    // Limit to 8 results in Telegram to avoid hitting message length limits
+    const displayList = results.slice(0, 8);
+    
+    await ctx.reply(`🔍 Found ${results.length} creators:`);
 
-    // Only show top 5 in the bot to avoid spamming
-    for (const c of results.slice(0, 5)) {
+    for (const c of displayList) {
       await ctx.replyWithPhoto(c.avatar, {
-        caption: `*${c.name}*\n${c.description.substring(0, 100)}...`,
+        caption: `*${c.name}*\n@${c.username}`,
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([[Markup.button.url('✨ View Profile', c.link)]])
       });
     }
-    
-    if (results.length > 5) {
-      await ctx.reply(`And ${results.length - 5} more... View them all on the website!`);
+
+    if (results.length > 8) {
+      await ctx.reply(`...and ${results.length - 8} more. Search the web app for the full list!`);
     }
   });
 
@@ -52,6 +55,6 @@ export default async function handler(req: any, res: any) {
     await bot.handleUpdate(req.body);
     res.status(200).send('OK');
   } catch (err) {
-    res.status(500).send('Bot Error');
+    res.status(500).send('Error');
   }
 }
