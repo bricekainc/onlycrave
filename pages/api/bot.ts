@@ -10,7 +10,7 @@ export default async function handler(req: any, res: any) {
     ctx.replyWithMarkdownV2(
       "Welcome to the *OnlyCrave Search Bot*\\!\n\nType any letter \\(e\\.g\\., 'A'\\) to see creators starting with that letter, or type a name to search\\.",
       Markup.inlineKeyboard([
-        [Markup.button.url('🌐 Open Full Directory', 'https://your-app.vercel.app')]
+        [Markup.button.url('🌐 Open Full Directory', 'https://onlycrave.vercel.app')]
       ])
     );
   });
