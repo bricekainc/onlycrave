@@ -13,5 +13,10 @@
     "react-dom": "latest",
     "rss-parser": "^3.13.0",
     "telegraf": "^4.16.3"
+  },
+  "devDependencies": {
+    "typescript": "latest",
+    "@types/react": "latest",
+    "@types/node": "latest"
   }
 }
