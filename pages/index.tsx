@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
-import { getCreators } from '../lib/getCreators';
+import { getCreators } from '../lib/fetchCreators';
 
 export async function getServerSideProps() {
   const creators = await getCreators();
@@ -29,6 +29,9 @@ export default function Home({ creators }: { creators: any[] }) {
     c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  <p style={{ opacity: 0.6, marginTop: '10px' }}>
+  Showing {filteredCreators.length} of {creators.length} verified creators
+</p>
 
   // 3. Age Verification
   const handleViewProfile = (creator: any) => {
