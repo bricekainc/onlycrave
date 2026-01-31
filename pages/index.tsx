@@ -58,6 +58,7 @@ export default function Home({ creators }: { creators: any[] }) {
         <title>OnlyCrave Search | Discover & Verify Elite Creators</title>
         <meta name="description" content="The official OnlyCrave directory. Discover and search over 500+ verified creators. Join the world's most authentic creator-fan connection platform." />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="google-site-verification" content="wsBEVCOeRh045P5uzn7Gk0kEjgf7eqshyP3XuDIKGn4" />
         {/* SEO Structured Data for AI */}
         <script type="application/ld+json">
           {JSON.stringify({
