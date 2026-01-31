@@ -63,6 +63,7 @@ export default function CreatorProfile({ creator }: { creator: any }) {
         <meta property="og:title" content={`${creator.name} on OnlyCrave`} />
         <meta property="og:description" content={creator.description.substring(0, 160)} />
         <meta property="og:image" content={creator.avatar} />
+        <meta name="google-site-verification" content="wsBEVCOeRh045P5uzn7Gk0kEjgf7eqshyP3XuDIKGn4" />
       </Head>
 
       <main style={{ maxWidth: '750px', margin: '0 auto', padding: '60px 20px' }}>
