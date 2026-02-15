@@ -32,7 +32,7 @@ const competitorsData: Record<string, any> = {
 
 const ONLYCRAVE_DATA = {
   name: 'OnlyCrave',
-  price: '10% Commission',
+  price: 'Less than 5% Commission',
   rating: 4.9,
   features: ['Encrypted Privacy', 'Fastest Payouts', 'Advanced Discovery', 'Lowest Fees', '24/7 Support']
 };
