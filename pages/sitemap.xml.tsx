@@ -1,5 +1,5 @@
 import { GetServerSideProps } from 'next';
-import { fetchCreators } from '../lib/fetchCreators';
+import { getCreators } from '../lib/getCreators';
 import { RANKING_COMPETITORS } from '../lib/competitors';
 
 const Sitemap = () => null;
@@ -10,7 +10,7 @@ export const getServerSideProps: GetServerSideProps = async ({ res }) => {
 
   let creators = [];
   try {
-    creators = await fetchCreators();
+    creators = await getCreators();
   } catch (e) {
     console.error("Sitemap Creator Fetch Error:", e);
   }
