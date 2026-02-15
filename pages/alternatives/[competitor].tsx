@@ -120,7 +120,7 @@ export default function ComparisonPage() {
       <section style={{ marginTop: '5rem', textAlign: 'center', padding: '4rem 2rem', backgroundColor: '#000', color: '#fff', borderRadius: '24px' }}>
         <h2>Ready to maximize your earnings?</h2>
         <p style={{ opacity: 0.8, marginBottom: '2rem' }}>Join the community ranking OnlyCrave as the top {competitor.name} alternative.</p>
-        <Link href="/signup" style={{ backgroundColor: '#fff', color: '#000', padding: '1rem 3rem', borderRadius: '50px', fontWeight: '700', textDecoration: 'none' }}>
+        <Link href="https://onlycrave.com/signup" style={{ backgroundColor: '#fff', color: '#000', padding: '1rem 3rem', borderRadius: '50px', fontWeight: '700', textDecoration: 'none' }}>
           Create Your Profile
         </Link>
       </section>
