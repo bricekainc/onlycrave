@@ -8,35 +8,44 @@ export default async function handler(req: any, res: any) {
 
   bot.start((ctx) => {
     ctx.replyWithMarkdownV2(
-      "🚀 *Welcome to the OnlyCrave Official Bot*\\!\n\nFind your favorite creators instantly\\.\n\n" +
-      "• Type a **name** or **letter** to search\\.\n" +
-      "• Use the buttons below for quick access\\.",
+      "🚀 *Welcome to OnlyCrave Official*\\!\n\n" +
+      "Discover exclusive content from your favorite creators\\.\n\n" +
+      "✨ *How to use:* \n" +
+      "• Type a **name** to search\n" +
+      "• Browse trending profiles below",
       Markup.inlineKeyboard([
-        [Markup.button.url('🚪 Login', 'https://onlycrave.com/login'), Markup.button.url('📝 Sign Up', 'https://onlycrave.com/register')],
-        [Markup.button.callback('❓ View FAQ', 'show_faq')],
-        [Markup.button.url('🌐 Visit Website', 'https://onlycrave.vercel.app')]
+        [
+          Markup.button.url('🔐 Login', 'https://onlycrave.com/login'), 
+          Markup.button.url('💎 Join Now', 'https://onlycrave.com/register')
+        ],
+        [Markup.button.callback('❔ Frequently Asked Questions', 'show_faq')],
+        [Markup.button.url('🌐 Open Web App', 'https://onlycrave.vercel.app')]
       ])
     );
   });
 
-  // Handle FAQ Button Click
   bot.action('show_faq', (ctx) => {
     ctx.reply(
-      "📝 OnlyCrave FAQ:\n\n" +
-      "1. Is OnlyCrave free? Registration is free, but creators set their own subscription prices.\n" +
-      "2. How do I delete my account? Visit Settings > Security on the website.\n" +
-      "3. Payment issues? Contact support below.",
-      Markup.inlineKeyboard([[Markup.button.url('📧 Contact Support', 'https://onlycrave.com/contact')]])
+      "📝 *OnlyCrave Help Center*\n\n" +
+      "• *Is it free?* Registration is free! Creators set their own monthly rates.\n" +
+      "• *Account Safety:* We use industry-standard encryption for all payments.\n" +
+      "• *Support:* Need help? Our team is available 24/7.",
+      {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([[Markup.button.url('📧 Contact Support', 'https://onlycrave.com/contact')]])
+      }
     );
   });
 
-bot.on('text', async (ctx) => {
+  bot.on('text', async (ctx) => {
     const text = ctx.message.text;
     const query = text.trim().toLowerCase();
 
-    // Check if it's a question
     if (text.includes('?') || query.startsWith('how') || query.startsWith('why')) {
-      return ctx.reply("It looks like you have a question! For account-specific help, please contact our official team here: https://onlycrave.com/contact");
+      return ctx.reply("💡 *Need Help?*\n\nIt looks like you have a question. For account-specific issues, please contact our support team directly.", {
+        parse_mode: 'Markdown',
+        ...Markup.inlineKeyboard([[Markup.button.url('📩 Message Support', 'https://onlycrave.com/contact')]])
+      });
     }
 
     const creators = await getCreators();
@@ -46,32 +55,46 @@ bot.on('text', async (ctx) => {
     });
 
     if (results.length === 0) {
-      return ctx.reply(`No creators found for "${text}".`);
+      return ctx.reply(`❌ No creators found matching "*${text}*". Try another name!`, { parse_mode: 'Markdown' });
     }
 
-    await ctx.reply(`🔍 Found ${results.length} results:`);
-    
-    for (const c of results.slice(0, 5)) {
-      // THE CHANGE IS HERE:
-      // We use backticks to inject the creator's username into your Vercel URL
+    // Limit results to 5 to avoid flooding the user
+    const displayResults = results.slice(0, 5);
+
+    for (const [index, c] of displayResults.entries()) {
       const profileUrl = `https://onlycrave.vercel.app/${c.username}`;
+      
+      // Creating a "Premium" feel caption
+      const caption = 
+        `🌟 *${c.name}*\n` +
+        `@${c.username}\n\n` +
+        `🔥 *Exclusive Content Available*\n` +
+        `✨ 100+ Posts  •  ⭐ 4.9 Rating\n\n` +
+        `👇 *Tap below to subscribe and view:*`;
 
       await ctx.replyWithPhoto(c.avatar, {
-        caption: `*${c.name}*\n@${c.username}`,
+        caption: caption,
         parse_mode: 'Markdown',
         ...Markup.inlineKeyboard([
-          [Markup.button.url('✨ View Profile', profileUrl)]
+          [Markup.button.url('💎 Subscribe & View Profile', profileUrl)],
+          [Markup.button.url('✉️ Send Tip', `${profileUrl}/tip`)]
         ])
       });
     }
 
     if (results.length > 5) {
-      await ctx.reply(`And ${results.length - 5} more results. Visit the website to see them all!`);
+      await ctx.reply(
+        `✨ *Wait, there's more!* \nWe found ${results.length - 5} other creators matching your search.`,
+        Markup.inlineKeyboard([[Markup.button.url('🔎 View All Results', `https://onlycrave.vercel.app/search?q=${query}`)]])
+      );
     }
   });
 
   try {
     await bot.handleUpdate(req.body);
     res.status(200).send('OK');
-  } catch (err) { res.status(500).send('Error'); }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error');
+  }
 }
