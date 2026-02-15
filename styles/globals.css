@@ -1,0 +1,8 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add a dark background by default to prevent the "white flash" */
+body {
+  @apply bg-zinc-950 text-white;
+}
