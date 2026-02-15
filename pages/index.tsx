@@ -61,6 +61,7 @@ export default function Home({ creators }: { creators: any[] }) {
         <meta name="description" content="Search the official OnlyCrave directory. Discover top influencers, compare OnlyCrave vs OnlyFans, and enjoy secure M-Pesa, Crypto, and PayPal payments." />
         <meta name="keywords" content="OnlyCrave search, OnlyCrave vs Fansly, OnlyFans Mpesa, OnlyCrave creators, verified influencer directory, secure creator platform" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link rel="icon" href="https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico" />
         <link rel="canonical" href="https://onlycrave.com" />
         
         {/* Structured Data for SEO */}
