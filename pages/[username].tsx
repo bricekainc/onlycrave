@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { getCreators } from '../lib/fetchCreators';
+import { getCreators } from '../lib/getCreators';
 
 export async function getServerSideProps(context: any) {
   const { username } = context.params;
