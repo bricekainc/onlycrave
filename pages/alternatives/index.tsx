@@ -74,6 +74,7 @@ export default function AlternativesSearchPage() {
       <Head>
         <title>Compare OnlyCrave with Any Platform | 2026 Best Creator Alternatives</title>
         <meta name="description" content="Discover why OnlyCrave is the top-ranked alternative for creators in 2026. Compare fees, payouts, and privacy with any website instantly." />
+        <link rel="icon" href="https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico" />
       </Head>
 
       {/* Hero Section */}
