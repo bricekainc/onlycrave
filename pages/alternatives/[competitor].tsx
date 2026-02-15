@@ -33,6 +33,7 @@ export default function SEOComparisonPage() {
       <Head>
         <title>OnlyCrave vs {competitor.name} | The Best {competitor.name} Alternative (2026)</title>
         <meta name="description" content={`Is OnlyCrave better than ${competitor.name}? Discover why creators are switching for < 5% fees, instant KYC, and localized payouts like M-Pesa.`} />
+        <link rel="icon" href="https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico" />
       </Head>
 
       <style jsx global>{`
