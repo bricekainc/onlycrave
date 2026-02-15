@@ -2,12 +2,20 @@ import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
 
-// Detailed data for 2026's top alternatives
+// The "Database" of known competitors
 const competitorsData: Record<string, any> = {
+  'onlyfans': {
+    name: 'OnlyFans',
+    pros: 'The biggest name in the industry with the most users.',
+    cons: 'High competition for creators and known for platform instability.',
+    price: '20% Commission',
+    rating: 4.0,
+    features: ['Massive Audience', 'Standard Subscriptions', 'PPV Messaging']
+  },
   'fansly': {
     name: 'Fansly',
-    pros: 'Strong internal discovery and tiered subscriptions.',
-    cons: 'Higher platform commissions than OnlyCrave.',
+    pros: 'Great internal discovery and tiered subscriptions.',
+    cons: 'Higher fees than OnlyCrave.',
     price: '20% Commission',
     rating: 4.4,
     features: ['Tiered Subs', 'Internal Discovery', 'Geo-blocking']
@@ -15,26 +23,10 @@ const competitorsData: Record<string, any> = {
   'fanvue': {
     name: 'Fanvue',
     pros: 'AI-friendly tools and faster payouts.',
-    cons: 'Smaller user base; still charges significant fees.',
+    cons: 'Platform fees still higher than OnlyCrave.',
     price: '15-20% Commission',
     rating: 4.2,
     features: ['AI Integration', 'Fast Payouts', 'Analytics']
-  },
-  'exclu': {
-    name: 'Exclu',
-    pros: 'Direct DM selling via social media links.',
-    cons: 'Lacks a centralized marketplace for discovery.',
-    price: '0% Commission',
-    rating: 4.6,
-    features: ['Direct Selling', 'Privacy Focused', '0% Fees']
-  },
-  'patreon': {
-    name: 'Patreon',
-    pros: 'Massive brand trust for non-adult creators.',
-    cons: 'Strict content guidelines; not suitable for all niches.',
-    price: '8-12% Commission',
-    rating: 4.1,
-    features: ['Membership Tiers', 'App Integration', 'Merch Tools']
   }
 };
 
@@ -49,21 +41,21 @@ export default function ComparisonPage() {
   const router = useRouter();
   const { competitor: slug } = router.query;
 
+  // Wait for the router to be ready
   if (!router.isReady) return null;
 
-  // Normalize slug to match keys
-  const competitor = competitorsData[String(slug).toLowerCase()];
-
-  // Fallback if the competitor isn't in our database yet
-  if (!competitor) {
-    return (
-      <div style={{ padding: '4rem', textAlign: 'center', fontFamily: 'sans-serif' }}>
-        <h1>Comparison for "{slug}" coming soon!</h1>
-        <p>We are currently analyzing this platform to give you the most accurate data.</p>
-        <Link href="/" style={{ color: '#0070f3' }}>Return to OnlyCrave</Link>
-      </div>
-    );
-  }
+  // 1. Normalize the slug (Handle /OnlyFans or /onlyfans the same way)
+  const safeSlug = String(slug).toLowerCase();
+  
+  // 2. Try to find the competitor, OR create a generic one if not found
+  const competitor = competitorsData[safeSlug] || {
+    name: safeSlug.charAt(0).toUpperCase() + safeSlug.slice(1), // Capitalize first letter
+    pros: 'Established platform in the creator space.',
+    cons: 'Likely has higher fees and less privacy than OnlyCrave.',
+    price: 'Varies (usually 20%)',
+    rating: 3.5,
+    features: ['Standard Tools']
+  };
 
   const allFeatures = Array.from(new Set([...ONLYCRAVE_DATA.features, ...competitor.features]));
 
