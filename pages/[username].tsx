@@ -84,6 +84,7 @@ export default function CreatorProfile({ creator }: { creator: any }) {
         <title>{pageTitle}</title>
         <meta name="description" content={seoDescription} />
         <meta name="keywords" content={`${creator.name}, ${creator.username}, OnlyCrave, Mpesa, PayPal, Subscription, Exclusive Content`} />
+        <link rel="icon" href="https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico" />
         
         {/* Open Graph */}
         <meta property="og:title" content={pageTitle} />
