@@ -6,7 +6,7 @@ const parser = new Parser({
   }
 });
 
-export async function fetchCreators() {
+export async function getCreators() {
   try {
     const feed = await parser.parseURL('https://onlycrave.com/rss/creators/feed/');
     return feed.items.map(item => {
