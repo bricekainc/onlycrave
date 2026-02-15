@@ -12,30 +12,23 @@ export default function Home({ creators }: { creators: any[] }) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [showAgeGate, setShowAgeGate] = useState(false);
-  const [targetUrl, setTargetUrl] = useState('');
+  const [isRedirecting, setIsRedirecting] = useState(false);
+  const [loadingCreator, setLoadingCreator] = useState('');
 
-  // 1. Theme and Loading Logic
   useEffect(() => {
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     setIsDarkMode(systemPrefersDark);
-    
-    // Premium loading delay to reduce bounce rate and build anticipation
-    const timer = setTimeout(() => setLoading(false), 2500);
-    return () => clearTimeout(timer);
   }, []);
 
   const theme = {
     bg: isDarkMode ? '#050505' : '#ffffff',
     card: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-    glass: isDarkMode ? 'rgba(22, 22, 26, 0.8)' : 'rgba(255, 255, 255, 0.9)',
+    glass: isDarkMode ? 'rgba(22, 22, 26, 0.7)' : 'rgba(255, 255, 255, 0.8)',
     text: isDarkMode ? '#ffffff' : '#1a1a1b',
     primary: '#e33cc7', 
     secondary: '#2ddfff', 
     accent: '#0102FD',
     border: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-    muted: isDarkMode ? '#888' : '#666',
   };
 
   const filteredCreators = creators.filter(c =>
@@ -43,261 +36,206 @@ export default function Home({ creators }: { creators: any[] }) {
     c.username.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const triggerAgeGate = (username: string) => {
-    setTargetUrl(`/${username}`);
-    setShowAgeGate(true);
+  const handleAction = (username: string) => {
+    setLoadingCreator(username);
+    setIsRedirecting(true);
+    // Retention delay to simulate "Secure Connection"
+    setTimeout(() => {
+      router.push(`/${username}`);
+    }, 2200);
   };
-
-  const handleAgeVerify = (isOfAge: boolean) => {
-    if (isOfAge) {
-      router.push(targetUrl);
-    } else {
-      window.location.href = "https://briceka.com/onlycrave";
-    }
-  };
-
-  if (loading) {
-    return (
-      <div style={{ backgroundColor: '#050505', height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
-        <div className="loader-ring"></div>
-        <h2 style={{ color: '#fff', marginTop: '20px', letterSpacing: '4px', fontSize: '0.8rem', fontWeight: '300' }}>LOADING ONLYCRAVE</h2>
-        <style jsx>{`
-          .loader-ring {
-            width: 80px; height: 80px;
-            border: 2px solid #e33cc7;
-            border-radius: 50%;
-            border-top-color: #2ddfff;
-            animation: spin 1s ease-in-out infinite;
-          }
-          @keyframes spin { to { transform: rotate(360deg); } }
-        `}</style>
-      </div>
-    );
-  }
 
   return (
-    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', transition: '0.3s', fontFamily: '"Inter", system-ui, sans-serif' }}>
+    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', transition: '0.3s', fontFamily: '"Inter", sans-serif' }}>
       <Head>
-        <title>OnlyCrave Directory | Search 500+ Verified Creators & Influencers</title>
-        <meta name="description" content="The ultimate OnlyCrave search engine. Find verified creators, browse exclusive profiles, and subscribe using M-Pesa, PayPal, or Crypto. Join the elite OnlyCrave community." />
-        <meta name="keywords" content="OnlyCrave search, find OnlyCrave creators, Mpesa OnlyCrave, verified influencers, adult content directory, OnlyCrave Kenya, secure subscription" />
+        <title>OnlyCrave Search | Official Directory of Verified Content Creators</title>
+        <meta name="description" content="Discover OnlyCrave creators with the official search directory. Compare OnlyCrave vs OnlyFans & Fansly. Support creators via M-Pesa, PayPal, and Crypto safely." />
+        <meta name="keywords" content="OnlyCrave search, OnlyCrave vs OnlyFans, OnlyCrave vs Fansly, Mpesa OnlyCrave, verified creators directory, OnlyCrave login, top OnlyCrave accounts" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <meta name="google-site-verification" content="wsBEVCOeRh045P5uzn7Gk0kEjgf7eqshyP3XuDIKGn4" />
-        
-        {/* JSON-LD for rich snippets */}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
           "@context": "https://schema.org",
-          "@type": "WebSite",
-          "name": "OnlyCrave Search",
-          "url": "https://onlycrave.com",
-          "potentialAction": {
-            "@type": "SearchAction",
-            "target": "https://onlycrave.com/?q={search_term_string}",
-            "query-input": "required name=search_term_string"
-          }
+          "@type": "FAQPage",
+          "mainEntity": [
+            { "@type": "Question", "name": "How does OnlyCrave compare to OnlyFans?", "acceptedAnswer": { "@type": "Answer", "text": "OnlyCrave offers localized payments like M-Pesa, lower creator fees (80/20 split), and faster payout processing compared to OnlyFans." }},
+            { "@type": "Question", "name": "Can I use M-Pesa on OnlyCrave?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, OnlyCrave natively supports M-Pesa for both direct subscriptions and wallet top-ups." }}
+          ]
         })}} />
       </Head>
 
-      {/* --- FLOATING ACTIONS --- */}
-      <div className="floating-nav">
-        <a href="https://onlycrave.com/register" className="btn-primary">Get Started</a>
-        <a href="https://onlycrave.com/login" className="btn-secondary">Login</a>
-      </div>
+      {/* --- 3D LOGO & NAV --- */}
+      <nav style={{ padding: '30px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(10px)' }}>
+        <div className="logo-3d">
+          <span className="logo-only">ONLY</span><span className="logo-crave">CRAVE</span>
+        </div>
+      </nav>
 
-      <button onClick={() => setIsDarkMode(!isDarkMode)} className="theme-toggle">
-        {isDarkMode ? '☀️' : '🌙'}
-      </button>
-
-      {/* --- HERO SECTION --- */}
-      <header style={{ padding: '100px 20px 60px', textAlign: 'center', background: `radial-gradient(circle at top, ${theme.primary}11 0%, transparent 70%)` }}>
-        <h1 style={{ fontSize: 'clamp(3rem, 10vw, 5rem)', fontWeight: '900', margin: 0, letterSpacing: '-2px' }}>
-          <span style={{ color: theme.primary, textShadow: `0 0 30px ${theme.primary}55` }}>Only</span>
-          <span style={{ color: theme.secondary, textShadow: `0 0 30px ${theme.secondary}55` }}>Crave</span>
+      {/* --- HERO --- */}
+      <header style={{ textAlign: 'center', padding: '60px 20px' }}>
+        <h1 style={{ fontSize: 'clamp(2rem, 6vw, 3.5rem)', fontWeight: '800', marginBottom: '20px' }}>
+          Find Your Favorite <span style={{ color: theme.primary }}>Verified</span> Creators
         </h1>
-        <p style={{ maxWidth: '700px', margin: '20px auto', opacity: 0.8, fontSize: '1.2rem', lineHeight: '1.6', fontWeight: '300' }}>
-          Discover the world's most <strong>exclusive verified creators</strong>. Access premium content with unmatched privacy and secure payment options including M-Pesa.
-        </p>
-
-        {/* --- 3D SEARCH BAR --- */}
-        <div className="search-container">
+        <div className="search-pill-container">
           <input 
+            className="search-input"
             type="text" 
-            placeholder="Search by name or username..." 
-            value={searchTerm} 
+            placeholder="Search 500+ creators by name or @username..." 
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <div className="search-stats">
-            Displaying {filteredCreators.length} elite creators
-          </div>
         </div>
       </header>
 
-      {/* --- MAIN CONTENT & SEO TEXT --- */}
-      <main style={{ padding: '40px 20px', maxWidth: '1300px', margin: '0 auto' }}>
-        
-        {/* Creator Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px', marginBottom: '80px' }}>
+      {/* --- GRID --- */}
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px' }}>
           {filteredCreators.map((c) => (
             <div key={c.username} className="creator-card">
-              <div className="card-inner">
-                <img src={c.avatar} alt={c.name} className="avatar" />
-                <h3 style={{ margin: '15px 0 5px 0', fontSize: '1.4rem' }}>{c.name}</h3>
-                <p style={{ color: theme.primary, fontWeight: '700', fontSize: '0.9rem', marginBottom: '20px' }}>@{c.username}</p>
-                <button onClick={() => triggerAgeGate(c.username)} className="view-btn">
-                  Explore Profile
-                </button>
-              </div>
+              <img src={c.avatar} alt={c.name} className="creator-img" />
+              <h3>{c.name}</h3>
+              <p style={{ color: theme.primary, fontWeight: 'bold' }}>@{c.username}</p>
+              
+              <button onClick={() => handleAction(c.username)} className="pill-btn-3d">
+                {loadingCreator === c.username ? (
+                  <span className="loader-dots">Verifying</span>
+                ) : (
+                  "View Profile"
+                )}
+              </button>
             </div>
           ))}
         </div>
 
-        {/* --- SEO RICH CONTENT SECTION (400+ Words) --- */}
-        <article className="seo-content">
-          <section>
-            <h2>The Official OnlyCrave Creator Directory</h2>
-            <p>
-              Welcome to the internet's most comprehensive search engine for <strong>OnlyCrave influencers and creators</strong>. 
-              As the digital landscape evolves, fans are looking for more authentic, direct, and secure ways to support their 
-              favorite personalities. OnlyCrave provides a bridge, offering a premium environment where content is 
-              exclusive and interactions are meaningful.
-            </p>
-            <p>
-              Our directory features over 500 verified profiles, ranging from top-tier fashion models and fitness experts 
-              to digital artists and lifestyle influencers. Every creator in our database has undergone a rigorous 
-              verification process to ensure that you, the fan, are interacting with real people and authentic content.
-            </p>
-          </section>
+        {/* --- SEO POWER CONTENT: COMPARISONS --- */}
+        <section className="seo-article">
+          <h2>Why OnlyCrave is the Leading OnlyFans Alternative</h2>
+          <p>
+            In the rapidly expanding creator economy, <strong>OnlyCrave</strong> stands out as a high-performance alternative to platforms like <strong>OnlyFans</strong> and <strong>Fansly</strong>. 
+            While global giants focus on broad markets, OnlyCrave prioritizes creator autonomy, security, and localized payment accessibility—specifically for users in regions where traditional credit cards are less common.
+          </p>
 
-          <section style={{ margin: '40px 0' }}>
-            <h2>Secure Payments: M-Pesa, PayPal, and Crypto</h2>
-            <p>
-              One of the primary reasons OnlyCrave has become a global leader in the creator economy is our flexible 
-              and localized payment infrastructure. We understand that privacy and accessibility are paramount. 
-              That is why we support:
-            </p>
-            <ul style={{ lineHeight: '2' }}>
-              <li><strong>M-Pesa:</strong> Direct integration for our African audience, allowing for instant wallet top-ups.</li>
-              <li><strong>PayPal & Cards:</strong> Standard secure processing for global convenience.</li>
-              <li><strong>Cryptocurrency:</strong> Use Bitcoin, Ethereum, and more via Coinbase or CoinPayments for maximum anonymity.</li>
-              <li><strong>Discreet Billing:</strong> We ensure your privacy is respected on every statement.</li>
-            </ul>
-          </section>
+          <div className="comparison-table-wrapper">
+            <table className="comparison-table">
+              <thead>
+                <tr>
+                  <th>Feature</th>
+                  <th>OnlyCrave</th>
+                  <th>OnlyFans</th>
+                  <th>Fansly</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>M-Pesa Support</strong></td>
+                  <td style={{color: theme.secondary}}>✓ Yes</td>
+                  <td>✗ No</td>
+                  <td>✗ No</td>
+                </tr>
+                <tr>
+                  <td><strong>Creator Payout</strong></td>
+                  <td>80% - 90%</td>
+                  <td>80%</td>
+                  <td>80%</td>
+                </tr>
+                <tr>
+                  <td><strong>Crypto Payments</strong></td>
+                  <td style={{color: theme.secondary}}>✓ Instant</td>
+                  <td>✗ Limited</td>
+                  <td>✓ Yes</td>
+                </tr>
+                <tr>
+                  <td><strong>Verification Speed</strong></td>
+                  <td>Fast (24h)</td>
+                  <td>Slow (3-5 Days)</td>
+                  <td>Moderate</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-          {/* --- FAQ SECTION --- */}
-          <section className="faq-section">
-            <h2 style={{ textAlign: 'center', fontSize: '2rem', marginBottom: '40px' }}>Frequently Asked Questions</h2>
-            <div className="faq-grid">
-              <details>
-                <summary>How do I find a specific OnlyCrave creator?</summary>
-                <p>Use our advanced search bar at the top of the page. You can search by their real name or their OnlyCrave @username. Our real-time filters will display verified profiles matching your query instantly.</p>
-              </details>
-              <details>
-                <summary>Is OnlyCrave safe for users?</summary>
-                <p>Absolutely. OnlyCrave uses high-level SSL encryption to protect user data. Furthermore, we offer 2FA (Two-Factor Authentication) and secure payment gateways to ensure your financial information is never compromised.</p>
-              </details>
-              <details>
-                <summary>Can I use M-Pesa to subscribe?</summary>
-                <p>Yes, OnlyCrave is one of the few premium platforms that supports M-Pesa. You can either pay directly for a subscription or deposit funds into your OnlyCrave Wallet using the M-Pesa STK push method.</p>
-              </details>
-              <details>
-                <summary>Why should I join OnlyCrave?</summary>
-                <p>OnlyCrave offers higher resolution content, faster streaming speeds, and a more intuitive interface than many other subscription platforms. It also supports creators with lower fees, meaning more of your support goes directly to them.</p>
-              </details>
-              <details>
-                <summary>Are there any hidden fees?</summary>
-                <p>No. The price you see on a creator's profile is the price you pay. Wallet deposits and direct subscriptions are transparent, and you can view your full transaction history in your account dashboard.</p>
-              </details>
-            </div>
-          </section>
+          <h3>The Official OnlyCrave Search Experience</h3>
+          <p>
+            Our directory is designed to bridge the gap between fans and elite creators. Unlike the fragmented search on other platforms, 
+            the <strong>OnlyCrave Search</strong> tool allows users to find verified profiles with zero friction. Whether you are looking 
+            for fitness tips, exclusive lifestyle vlogs, or digital art, our directory ensures you land on the official, 
+            verified page of your favorite influencer.
+          </p>
+
+          <div className="faq-section">
+            <h2>Frequently Asked Questions</h2>
+            <details>
+              <summary>Is OnlyCrave better than OnlyFans?</summary>
+              <p>For creators, OnlyCrave offers superior payout methods and local support. For fans, it provides a much more flexible checkout experience, including M-Pesa and PayPal, which are often restricted on OnlyFans.</p>
+            </details>
+            <details>
+              <summary>How do I know if a creator is verified?</summary>
+              <p>All creators listed in this official directory have passed the OnlyCrave Identity Verification (IDV) process, ensuring you are subscribing to the real person and not a fake account.</p>
+            </details>
+            <details>
+              <summary>What are the billing terms on OnlyCrave?</summary>
+              <p>OnlyCrave uses discreet billing for your privacy. Your statement will show a generic descriptor rather than a site-specific tag, ensuring your lifestyle choices remain your own.</p>
+            </details>
+          </div>
         </article>
       </main>
 
-      {/* --- AGE VERIFICATION MODAL --- */}
-      {showAgeGate && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div style={{ fontSize: '3.5rem', marginBottom: '15px' }}>🔞</div>
-            <h2 style={{ fontSize: '1.8rem', color: theme.primary }}>18+ Verification</h2>
-            <p style={{ margin: '15px 0 30px', opacity: 0.8 }}>This section contains adult content. Please confirm you are at least 18 years of age to proceed.</p>
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <button onClick={() => handleAgeVerify(false)} className="modal-btn-no">I am under 18</button>
-              <button onClick={() => handleAgeVerify(true)} className="modal-btn-yes">I am 18 or older</button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* --- STYLES --- */}
       <style jsx>{`
-        .floating-nav {
-          position: fixed; bottom: 30px; left: 30px; 
-          display: flex; gap: 15px; z-index: 1000;
+        .logo-3d {
+          font-size: 2.5rem; font-weight: 900; letter-spacing: -2px;
+          perspective: 500px; cursor: default;
         }
-        .btn-primary {
-          padding: 14px 28px; background: ${theme.primary}; color: white;
-          border-radius: 40px; font-weight: 800; text-decoration: none;
-          box-shadow: 0 10px 20px ${theme.primary}44; transition: 0.3s;
-        }
-        .btn-secondary {
-          padding: 14px 28px; background: ${theme.secondary}; color: #000;
-          border-radius: 40px; font-weight: 800; text-decoration: none;
-          box-shadow: 0 10px 20px ${theme.secondary}44; transition: 0.3s;
-        }
-        .theme-toggle {
-          position: fixed; bottom: 30px; right: 30px; z-index: 1000;
-          width: 60px; height: 60px; border-radius: 50%;
-          border: 1px solid ${theme.border}; background: ${theme.glass};
-          cursor: pointer; font-size: 24px; backdrop-filter: blur(10px);
-        }
-        .search-container {
-          width: 90%; maxWidth: 700px; margin: 40px auto 0; position: relative;
-        }
-        .search-container input {
-          width: 100%; padding: 25px 35px; border-radius: 100px;
-          border: 1px solid ${theme.border}; background: ${theme.glass};
-          color: ${theme.text}; fontSize: 1.2rem; outline: none;
-          backdrop-filter: blur(20px); box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-          transition: 0.3s;
-        }
-        .search-container input:focus { border-color: ${theme.primary}; transform: translateY(-5px); }
-        .search-stats { margin-top: 20px; color: ${theme.muted}; font-size: 0.9rem; text-transform: uppercase; letter-spacing: 2px; }
-        
-        .creator-card {
-          background: ${theme.card}; border-radius: 32px; padding: 30px;
-          border: 1px solid ${theme.border}; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          position: relative; overflow: hidden;
-        }
-        .creator-card:hover { transform: translateY(-10px) rotateX(5deg); border-color: ${theme.secondary}; box-shadow: 0 30px 60px rgba(0,0,0,0.2); }
-        .avatar { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid ${theme.secondary}; }
-        .view-btn {
-          width: 100%; padding: 15px; border-radius: 16px; border: none;
-          background: ${theme.accent}; color: white; font-weight: 800;
-          cursor: pointer; transition: 0.3s;
-        }
-        .view-btn:hover { background: ${theme.primary}; }
+        .logo-only { color: ${theme.primary}; text-shadow: 2px 2px 0px #000, 4px 4px 15px ${theme.primary}66; }
+        .logo-crave { color: ${theme.secondary}; text-shadow: 2px 2px 0px #000, 4px 4px 15px ${theme.secondary}66; transform: translateZ(20px); }
 
-        .seo-content { margin-top: 100px; line-height: 1.8; color: ${theme.muted}; }
-        .seo-content h2 { color: ${theme.text}; margin-bottom: 20px; }
-        
-        .faq-grid { display: grid; gap: 15px; }
-        details { background: ${theme.card}; padding: 20px; border-radius: 20px; border: 1px solid ${theme.border}; }
-        summary { font-weight: 700; cursor: pointer; color: ${theme.text}; }
-        
-        .modal-overlay {
-          position: fixed; inset: 0; background: rgba(0,0,0,0.95);
-          backdrop-filter: blur(20px); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;
+        .search-pill-container {
+          max-width: 650px; margin: 0 auto; position: relative;
         }
-        .modal-content {
-          background: ${theme.glass}; padding: 50px; border-radius: 40px;
-          max-width: 500px; width: 100%; text-align: center; border: 1px solid ${theme.primary};
+        .search-input {
+          width: 100%; padding: 20px 40px; border-radius: 50px;
+          border: 1px solid ${theme.border}; background: ${theme.glass};
+          color: ${theme.text}; font-size: 1.1rem; outline: none;
+          box-shadow: 0 10px 30px rgba(0,0,0,0.1); transition: 0.3s;
         }
-        .modal-btn-no { flex: 1; padding: 18px; border-radius: 15px; border: 1px solid ${theme.border}; background: transparent; color: ${theme.text}; cursor: pointer; }
-        .modal-btn-yes { flex: 1; padding: 18px; border-radius: 15px; border: none; background: ${theme.primary}; color: white; font-weight: 900; cursor: pointer; }
+        .search-input:focus { border-color: ${theme.primary}; box-shadow: 0 15px 40px ${theme.primary}22; }
+
+        .creator-card {
+          background: ${theme.card}; border-radius: 30px; padding: 25px;
+          text-align: center; border: 1px solid ${theme.border};
+          transition: 0.3s; position: relative;
+        }
+        .creator-card:hover { transform: translateY(-10px); border-color: ${theme.primary}; }
+        .creator-img { width: 110px; height: 110px; border-radius: 50%; object-fit: cover; border: 3px solid ${theme.secondary}; margin-bottom: 15px; }
+
+        .pill-btn-3d {
+          width: 100%; margin-top: 15px; padding: 15px;
+          border-radius: 50px; border: none;
+          background: linear-gradient(145deg, ${theme.accent}, #000);
+          color: white; font-weight: 800; cursor: pointer;
+          box-shadow: 0 6px 0px #000, 0 10px 20px rgba(0,0,0,0.3);
+          transition: 0.1s; position: relative; top: 0;
+        }
+        .pill-btn-3d:active { top: 4px; box-shadow: 0 2px 0px #000, 0 5px 10px rgba(0,0,0,0.3); }
+
+        .seo-article { margin-top: 80px; padding: 60px 0; border-top: 1px solid ${theme.border}; line-height: 1.8; color: ${theme.text}cc; }
+        .seo-article h2, .seo-article h3 { color: ${theme.text}; margin: 30px 0 15px; }
+
+        .comparison-table-wrapper { overflow-x: auto; margin: 40px 0; }
+        .comparison-table { width: 100%; border-collapse: collapse; background: ${theme.card}; border-radius: 20px; overflow: hidden; }
+        .comparison-table th, .comparison-table td { padding: 20px; text-align: left; border-bottom: 1px solid ${theme.border}; }
+        .comparison-table th { background: ${theme.primary}; color: white; }
+
+        .faq-section { margin-top: 60px; }
+        details { background: ${theme.card}; margin-bottom: 10px; padding: 20px; border-radius: 15px; cursor: pointer; }
+        summary { font-weight: 800; list-style: none; }
         
+        .loader-dots::after {
+          content: '...';
+          animation: dots 1.5s steps(5, end) infinite;
+        }
+        @keyframes dots { 0%, 20% { color: rgba(0,0,0,0); } 40% { color: white; } }
+
         @media (max-width: 768px) {
-          .floating-nav { left: 10px; right: 10px; bottom: 10px; flex-direction: row; }
-          .btn-primary, .btn-secondary { flex: 1; text-align: center; padding: 12px; font-size: 0.8rem; }
-          .theme-toggle { display: none; }
+          .logo-3d { font-size: 1.8rem; }
+          .pill-btn-3d { font-size: 0.9rem; }
         }
       `}</style>
     </div>
