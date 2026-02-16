@@ -20,7 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       // Send Email Notification via Resend
       await resend.emails.send({
-        from: 'OnlyCrave Alerts <africka@mail.comm>',
+        from: 'OnlyCrave Alerts <onboarding@resend.dev>',
         to: 'africka@mail.com',
         subject: `💰 New Tip: $${amount} for @${creatorUsername}`,
         html: `
