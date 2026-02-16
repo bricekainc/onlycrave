@@ -67,7 +67,7 @@ export default async function handler(req: any, res: any) {
       // Creating a "Premium" feel caption
       const caption = 
         `🌟 *${c.name}*\n` +
-        `onlycrave username:${c.username}\n\n` +
+        `onlycrave username:[@${c.username}](https://onlycrave.briceka.com/?${c.username})\n\n` +
         `🔥 *Exclusive Content Available*\n` +
         `✨ 100+ Posts  •  ⭐ 4.9 Rating\n\n` +
         `👇 *Tap below to subscribe and view:*`;
