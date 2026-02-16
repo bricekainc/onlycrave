@@ -67,7 +67,7 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
         const paypalEmail = process.env.NEXT_PUBLIC_PAYPAL_EMAIL || 'onlycrave@mail.com';
         window.location.href = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${paypalEmail}&item_name=Tip+for+${username}&amount=${amount}&currency_code=USD`;
       } else if (method === 'gpay') {
-        setError("Google Pay is currently in maintenance. Please use M-Pesa or Crypto.");
+        setError("Google Pay is currently in maintenance. Please use M-Pesa, PayPal or Crypto.");
       } else {
         const params = new URLSearchParams({
           cmd: '_pay_simple',
