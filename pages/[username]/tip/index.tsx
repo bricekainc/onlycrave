@@ -12,7 +12,6 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
   const router = useRouter();
   const { username } = router.query;
 
-  // --- State ---
   const [amount, setAmount] = useState<string>('10');
   const [localCurrency, setLocalCurrency] = useState({ code: 'KES', rate: 129.5, symbol: 'KSh' });
   const [method, setMethod] = useState<'mpesa' | 'crypto' | null>(null);
@@ -21,59 +20,41 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
   const [showSuccess, setShowSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- Sync Exchange Rates ---
   useEffect(() => {
     fetch('https://open.er-api.com/v6/latest/USD')
       .then((res) => res.json())
       .then((data) => {
         if (data.rates['KES']) setLocalCurrency((prev) => ({ ...prev, rate: data.rates['KES'] }));
       })
-      .catch(() => console.error("Exchange fetch failed - using fallback rate"));
+      .catch(() => console.error("Exchange fetch failed"));
   }, []);
 
-  // --- Listen for Payment Success via URL ---
   useEffect(() => {
-    if (router.query.success === 'true') {
-      setShowSuccess(true);
-    }
+    if (router.query.success === 'true') setShowSuccess(true);
   }, [router.query]);
 
   const handleTip = async () => {
     setError(null);
     if (!method) {
-        setError("Please select a payment method.");
-        return;
+      setError("Select a payment method to continue.");
+      return;
     }
-
     setLoading(true);
-
     try {
       if (method === 'mpesa') {
-        // Validate Phone (Basic Kenyan Format)
         if (!phone.match(/^(254|0)(7|1)\d{8}$/)) {
-            throw new Error("Please enter a valid M-Pesa number (e.g., 254712345678)");
+          throw new Error("Enter a valid M-Pesa number (e.g. 0712...)");
         }
-
-        // Trigger the Internal API Bridge
-        const res = await axios.post('/api/payments/mpesa', { 
-            amount, 
-            phone, 
-            username 
-        });
-        
-        if (res.data.success) {
-          // For M-Pesa, we show success once the STK push is triggered
-          setShowSuccess(true);
-        }
+        const res = await axios.post('/api/payments/mpesa', { amount, phone, username });
+        if (res.data.success) setShowSuccess(true);
       } else {
-        // Crypto Logic: Redirect to CoinPayments
         const params = new URLSearchParams({
           cmd: '_pay_simple',
           merchant: cpMerchantId,
           item_name: `Tip for @${username}`,
           amountf: amount,
           currency: 'USD',
-          email: 'africka@mail.com', 
+          email: 'africka@mail.com',
           first_name: 'Fan',
           last_name: String(username),
           custom: `${username}_tip_${Date.now()}`,
@@ -83,137 +64,139 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
         window.location.href = `https://www.coinpayments.net/index.php?${params.toString()}`;
       }
     } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Something went wrong. Please try again.');
+      setError(err.response?.data?.error || err.message || 'Transaction failed.');
     } finally {
       setLoading(false);
     }
   };
 
-  // --- SUCCESS STATE ---
   if (showSuccess) {
     return (
-      <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center p-4 font-sans">
-        <Head><title>Success! | OnlyCrave</title></Head>
-        <div className="max-w-md w-full backdrop-blur-3xl bg-white/[0.02] border border-white/[0.1] rounded-[3rem] p-10 text-center shadow-2xl">
-          <div className="w-20 h-20 bg-green-500 rounded-full mx-auto mb-6 flex items-center justify-center shadow-[0_0_40px_rgba(34,197,94,0.4)]">
+      <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center p-6 font-sans">
+        <div className="max-w-md w-full backdrop-blur-3xl bg-white/[0.03] border border-white/[0.1] rounded-[2.5rem] p-10 text-center shadow-2xl animate-in zoom-in-95 duration-500">
+          <div className="w-20 h-20 bg-emerald-500 rounded-full mx-auto mb-6 flex items-center justify-center shadow-[0_0_50px_rgba(16,185,129,0.3)]">
             <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7"></path>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="4" d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <h2 className="text-2xl font-black mb-2 uppercase italic">Tip Initiated!</h2>
-          <p className="text-gray-400 text-sm mb-8">
-            If using M-Pesa, please check your phone for the PIN prompt. <br/>
-            You sent <span className="text-white font-bold">${amount}</span> to <span className="text-[#0102FD]">@{username}</span>.
-          </p>
-          <button 
-            onClick={() => router.push(`/${username}`)}
-            className="w-full bg-white text-black font-black py-4 rounded-2xl uppercase tracking-widest text-xs hover:bg-gray-200 transition-all"
-          >
-            Return to Profile
-          </button>
+          <h2 className="text-3xl font-black mb-2 italic tracking-tighter">SENT!</h2>
+          <p className="text-gray-400 text-sm mb-8">Your tip of <span className="text-white font-bold">${amount}</span> is on its way to <span className="text-[#0102FD]">@{username}</span>.</p>
+          <button onClick={() => router.push(`/${username}`)} className="w-full bg-white text-black font-black py-4 rounded-xl uppercase tracking-widest text-[10px] hover:scale-[1.02] transition-transform">Back to Profile</button>
         </div>
       </div>
     );
   }
 
-  // --- MAIN FORM STATE ---
   return (
     <div className="min-h-screen bg-[#050505] text-white flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      <Head>
-        <title>Tip @{username} | OnlyCrave</title>
-      </Head>
+      <Head><title>Tip @{username} | OnlyCrave</title></Head>
 
-      {/* Decorative Glow */}
-      <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-          <div className="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] bg-[#0102FD]/10 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] bg-purple-600/5 rounded-full blur-[120px]"></div>
-      </div>
+      {/* Dynamic Background */}
+      <div className="absolute top-[-20%] left-[-10%] w-[70%] h-[70%] bg-[#0102FD]/20 rounded-full blur-[120px] animate-pulse"></div>
+      <div className="absolute bottom-[-20%] right-[-10%] w-[70%] h-[70%] bg-purple-600/10 rounded-full blur-[120px]"></div>
 
-      <div className="max-w-md w-full relative z-10">
-        <div className="backdrop-blur-2xl bg-white/[0.01] border border-white/[0.08] rounded-[2.5rem] p-8 shadow-2xl">
+      <div className="max-w-[440px] w-full relative z-10">
+        <div className="backdrop-blur-3xl bg-white/[0.02] border border-white/[0.08] rounded-[3rem] p-6 sm:p-10 shadow-2xl overflow-hidden">
           
-          <div className="text-center mb-8">
-            <h1 className="text-xl font-black tracking-tighter uppercase italic">Send a Tip to @{username}</h1>
-            <div className="h-1 w-12 bg-[#0102FD] mx-auto mt-2"></div>
+          {/* Brand Header */}
+          <div className="flex flex-col items-center mb-10">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#0102FD] to-blue-600 rounded-2xl flex items-center justify-center mb-4 shadow-lg shadow-blue-900/40">
+              <span className="text-2xl">💸</span>
+            </div>
+            <h1 className="text-2xl font-black tracking-tighter italic uppercase">Support @{username}</h1>
+            <p className="text-[10px] text-gray-500 uppercase tracking-[0.4em] font-bold mt-1">Direct Creator Tip</p>
           </div>
 
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-bold text-center">
+            <div className="mb-6 p-4 rounded-2xl bg-red-500/10 border border-red-500/20 text-red-400 text-[11px] font-bold text-center animate-shake">
               {error}
             </div>
           )}
 
           <div className="space-y-6">
-            {/* Amount Input */}
-            <div className="bg-white/[0.03] border border-white/[0.05] rounded-3xl p-6 transition-all focus-within:border-[#0102FD]/50">
-              <label className="block text-[10px] uppercase tracking-[0.2em] text-gray-500 mb-2 font-black">Amount (USD)</label>
-              <div className="flex items-center">
-                <span className="text-3xl font-black text-gray-600 mr-2">$</span>
+            {/* Amount Visualizer */}
+            <div className="bg-white/[0.04] border border-white/[0.06] rounded-[2rem] p-6 focus-within:border-[#0102FD]/40 transition-all group">
+              <label className="block text-[10px] uppercase tracking-widest text-gray-500 mb-2 font-black">Enter Amount (USD)</label>
+              <div className="flex items-baseline">
+                <span className="text-3xl font-black text-gray-700 mr-2 group-focus-within:text-[#0102FD] transition-colors">$</span>
                 <input 
                   type="number" 
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 text-4xl font-black focus:ring-0 outline-none text-white"
+                  className="w-full bg-transparent border-none p-0 text-5xl font-black focus:ring-0 outline-none text-white placeholder:text-gray-800"
                 />
               </div>
-              <p className="text-[11px] font-bold text-[#0102FD] mt-3 uppercase tracking-wider">
-                ≈ {localCurrency.symbol} {(Number(amount) * localCurrency.rate).toLocaleString()} KES
-              </p>
+              <div className="mt-4 pt-4 border-t border-white/[0.03] flex justify-between items-center">
+                <span className="text-[10px] font-black text-gray-600 uppercase tracking-tighter">Local Est.</span>
+                <span className="text-[#0102FD] font-black text-lg">
+                  {localCurrency.symbol} {(Number(amount) * localCurrency.rate).toLocaleString()}
+                </span>
+              </div>
             </div>
 
-            {/* Methods */}
-            <div className="grid grid-cols-2 gap-3">
+            {/* Payment Method Selector */}
+            <div className="grid grid-cols-2 gap-4">
               <button 
                 onClick={() => setMethod('mpesa')}
-                className={`py-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${method === 'mpesa' ? 'border-[#0102FD] bg-[#0102FD]/10' : 'border-white/[0.05] bg-white/[0.02]'}`}
+                className={`group py-5 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-2 ${method === 'mpesa' ? 'border-[#0102FD] bg-[#0102FD]/10' : 'border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05]'}`}
               >
-                <span className="text-xl">📱</span>
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-300">M-Pesa</span>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${method === 'mpesa' ? 'bg-[#0102FD] text-white' : 'bg-white/5 text-gray-400 group-hover:text-white'}`}>
+                  <span className="text-xl">S</span>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest">M-Pesa</span>
               </button>
               <button 
                 onClick={() => setMethod('crypto')}
-                className={`py-4 rounded-2xl border-2 transition-all flex flex-col items-center gap-1 ${method === 'crypto' ? 'border-[#0102FD] bg-[#0102FD]/10' : 'border-white/[0.05] bg-white/[0.02]'}`}
+                className={`group py-5 rounded-[1.5rem] border-2 transition-all flex flex-col items-center gap-2 ${method === 'crypto' ? 'border-[#0102FD] bg-[#0102FD]/10' : 'border-white/[0.05] bg-white/[0.02] hover:bg-white/[0.05]'}`}
               >
-                <span className="text-xl">₿</span>
-                <span className="text-[9px] font-black uppercase tracking-widest text-gray-300">Crypto</span>
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${method === 'crypto' ? 'bg-[#0102FD] text-white' : 'bg-white/5 text-gray-400 group-hover:text-white'}`}>
+                  <span className="text-xl">₿</span>
+                </div>
+                <span className="text-[10px] font-black uppercase tracking-widest">Crypto</span>
               </button>
             </div>
 
-            {/* M-Pesa Input Field */}
+            {/* Contextual Input */}
             {method === 'mpesa' && (
-              <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
-                <label className="text-[10px] font-black text-gray-500 uppercase ml-2 tracking-widest">Phone Number</label>
+              <div className="space-y-2 animate-in slide-in-from-top-4 duration-300">
                 <input 
                   type="tel"
                   placeholder="2547XXXXXXXX"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full bg-black border border-white/[0.1] rounded-2xl py-4 px-6 text-white focus:border-[#0102FD] outline-none font-bold"
+                  className="w-full bg-black/40 border border-white/[0.1] rounded-2xl py-5 px-6 text-white focus:border-[#0102FD] outline-none font-bold placeholder:text-gray-800 text-lg"
                 />
+                <p className="text-[9px] text-center text-gray-500 font-bold uppercase tracking-tighter">You will receive an M-Pesa prompt on this phone</p>
               </div>
             )}
 
-            {/* Submit */}
-            <button 
-              disabled={loading || !method || Number(amount) <= 0}
-              onClick={handleTip}
-              className="w-full h-16 bg-[#0102FD] disabled:opacity-30 text-white rounded-2xl shadow-xl shadow-[#0102FD]/20 transition-all active:scale-[0.98] mt-4 flex items-center justify-center"
-            >
-              {loading ? (
-                <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <span className="text-xs font-black uppercase tracking-[0.2em]">Complete Transaction</span>
-              )}
-            </button>
+            {/* Action Buttons */}
+            <div className="pt-2 space-y-4">
+              <button 
+                disabled={loading || !method || Number(amount) <= 0}
+                onClick={handleTip}
+                className="w-full h-16 bg-[#0102FD] disabled:opacity-20 text-white rounded-2xl shadow-[0_10px_30px_rgba(1,2,253,0.3)] transition-all active:scale-[0.97] hover:brightness-110 flex items-center justify-center overflow-hidden relative group"
+              >
+                {loading ? (
+                  <div className="w-6 h-6 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                ) : (
+                  <span className="text-xs font-black uppercase tracking-[0.3em]">Authorize Tip</span>
+                )}
+              </button>
 
-            <button 
+              <button 
                 onClick={() => router.push(`/${username}`)}
-                className="w-full text-[9px] text-gray-600 font-black uppercase tracking-[0.3em] hover:text-white transition-colors"
-            >
-                Cancel and Go Back
-            </button>
+                className="w-full text-[10px] text-gray-600 font-black uppercase tracking-[0.4em] hover:text-white transition-colors"
+              >
+                Return to @{username}
+              </button>
+            </div>
           </div>
         </div>
+        
+        <p className="text-center text-[9px] text-gray-700 font-black uppercase tracking-[0.5em] mt-8 opacity-50">
+          ONLYCRAVE • SECURE GATEWAY
+        </p>
       </div>
     </div>
   );
