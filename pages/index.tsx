@@ -79,7 +79,7 @@ export default function SmartLanding({ creators }: { creators: any[] }) {
           <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/9148/9148935.png" />
           
           {/* Correct React way to handle Canonical URL */}
-          <link rel="canonical" href={`https://onlycrave.com${router.asPath}`} />
+          <link rel="canonical" href="https://onlycrave.com"/>
         </Head>
 
         <div style={{ margin: 0, padding: '80px 20px', minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 50% 0%, #1a1a2e 0%, #050505 100%)', position: 'relative', overflow: 'hidden', textAlign: 'center' }}>
@@ -97,45 +97,59 @@ export default function SmartLanding({ creators }: { creators: any[] }) {
                 <p style={{ color: '#a0a0a0', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: 30 }}>
                   Join the ultimate platform for creators. We've upgraded! Fansnub has merged with OnlyCrave. We've made the switch to improve performance and features, but all your favorite content and creators are exactly where you expect them to be.
                 </p>
-{/* Premium Destination Preview Card - Inline CSS Implementation */}
+{/* Premium Destination Preview Card */}
+
 <div style={{
-  background: '#000',
-  borderRadius: '16px',
-  overflow: 'hidden',
-  margin: '25px 0',
-  border: '1px solid #333',
-  textAlign: 'left',
-  transition: '0.3s',
-  boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+  background: "#000",
+  border: "1px solid #222",
+  borderRadius: 18,
+  overflow: "hidden",
+  margin: "25px 0",
+  boxShadow: "0 12px 35px rgba(0,0,0,.55)",
+  transition: "all .3s ease"
 }}>
-  <img 
-    src={creator?.avatar || "https://onlycrave.com/public/img/logo.png"} 
-    alt="Preview" 
-    style={{
-      width: '100%',
-      height: '180px',
-      objectFit: 'cover',
-      borderBottom: '1px solid #222'
-    }}
-  />
-  <div style={{ padding: '15px' }}>
-    <div style={{
-      fontWeight: 'bold',
-      color: '#a8e063', // Kiwi Green
-      fontSize: '1rem',
-      marginBottom: '5px'
-    }}>
-      {creator ? `${creator.name} (@${creator.username}) on OnlyCrave` : "OnlyCrave - Connect with Fans. Earn with Content."}
-    </div>
-    <div style={{
-      fontSize: '0.8rem',
-      color: '#0102FD', // Blue
-      fontFamily: 'monospace',
-      wordBreak: 'break-all'
-    }}>
-      onlycrave.com{router.asPath === '/' ? '' : router.asPath}
-    </div>
+
+  <div style={{
+    height: 180,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "linear-gradient(145deg,#0a0a0c,#111)",
+    borderBottom: "1px solid #1a1a1a"
+  }}>
+    <img
+      src="https://onlycrave.com/public/img/logo.png"
+      alt="OnlyCrave Logo"
+      style={{ maxWidth: "80%", maxHeight: 100, objectFit: "contain" }}
+    />
   </div>
+
+  <div style={{ padding: 18 }}>
+    <h3 style={{
+      margin: 0,
+      fontSize: "1.1rem",
+      fontWeight: 700,
+      color: "#a8e063"
+    }}>
+      OnlyCrave — Connect with Fans. Earn with Content.
+    </h3>
+
+    <a
+      href="https://onlycrave.com/"
+      style={{
+        display: "inline-block",
+        marginTop: 6,
+        fontSize: ".9rem",
+        fontFamily: "monospace",
+        fontWeight: 600,
+        color: "#0102FD",
+        textDecoration: "none"
+      }}
+    >
+      https://onlycrave.com/
+    </a>
+  </div>
+
 </div>
   
                 <div style={{ background: '#000', padding: '25px', borderRadius: '20px', border: '1px solid rgba(1, 2, 253, 0.3)', margin: '20px auto' }}>
