@@ -54,6 +54,7 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
 
   const handleTip = async () => {
     setError(null);
+    setShowSuccess(false);
     if (!method) { setError("Please select a payment method."); return; }
     setLoading(true);
 
@@ -61,13 +62,14 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
       if (method === 'mpesa') {
         if (!phone.match(/^(254|0)(7|1)\d{8}$/)) throw new Error("Invalid M-Pesa number.");
         const res = await axios.post('/api/payments/mpesa', { amount, phone, username });
-        if (res.data.success) setShowSuccess(true);
+        if (res.data.success) {
+          setShowSuccess(true);
+        }
       } else if (method === 'paypal') {
-        // Redirect to PayPal Donation flow
         const paypalEmail = process.env.NEXT_PUBLIC_PAYPAL_EMAIL || 'africka@mail.com';
         window.location.href = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${paypalEmail}&item_name=Tip+for+${username}&amount=${amount}&currency_code=USD`;
       } else if (method === 'gpay') {
-        setError("Google Pay is currently in maintenance. Please use M-Pesa, PayPal or Crypto.");
+        throw new Error("Google Pay is currently in maintenance. Please use M-Pesa, PayPal or Crypto.");
       } else {
         const params = new URLSearchParams({
           cmd: '_pay_simple',
@@ -81,8 +83,12 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
       }
     } catch (err: any) {
       setError(err.message || "Transaction failed.");
+      setLoading(false); // Only stop loading if there is an error
     } finally {
-      setLoading(false);
+      // For redirects (PayPal/Crypto), we keep loading active until the page changes
+      if (method === 'mpesa' || error) {
+        setLoading(false);
+      }
     }
   };
 
@@ -196,7 +202,7 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
 
         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', marginBottom: '20px'}}>
             {[{id: 'mpesa', icon: '📱', label: 'MPESA'}, {id: 'paypal', icon: '🅿️', label: 'PAYPAL'}, {id: 'gpay', icon: '💳', label: 'G-PAY'}, {id: 'crypto', icon: '₿', label: 'CRYPTO'}].map(m => (
-                <button key={m.id} onClick={() => setMethod(m.id as any)} style={styles.methodBtn(method === m.id)}>
+                <button key={m.id} onClick={() => {setMethod(m.id as any); setShowSuccess(false);}} style={styles.methodBtn(method === m.id)}>
                     <span style={{fontSize: '18px'}}>{m.icon}</span>
                     <span>{m.label}</span>
                 </button>
@@ -221,11 +227,29 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
             </div>
         )}
 
+        {/* STK Push Success Notice */}
+        {showSuccess && method === 'mpesa' && (
+          <div style={{
+              padding: '12px',
+              borderRadius: '15px',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              marginBottom: '15px',
+              background: 'rgba(16, 185, 129, 0.1)',
+              color: '#10b981',
+              border: '1px solid rgba(16, 185, 129, 0.2)',
+              textAlign: 'center'
+          }}>
+              ✅ STK PUSH SENT! <br/>
+              Check your device and enter M-Pesa PIN to complete payment.
+          </div>
+        )}
+
         <button 
             disabled={loading || !method}
             onClick={handleTip}
             style={{
-                width: '100%', height: '60px', background: '#0102FD', color: '#fff', border: 'none', borderRadius: '18px', fontSize: '12px', fontWeight: '900', letterSpacing: '2px', cursor: 'pointer', opacity: loading ? 0.5 : 1
+                width: '100%', height: '60px', background: '#0102FD', color: '#fff', border: 'none', borderRadius: '18px', fontSize: '12px', fontWeight: '900', letterSpacing: '2px', cursor: 'pointer', opacity: (loading || !method) ? 0.5 : 1
             }}
         >
             {loading ? "PROCESSING..." : "SEND TIP NOW"}
