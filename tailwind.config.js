@@ -1,17 +1,18 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
+export default {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
-    // This ensures dynamic routes like [competitor].tsx are scanned
-    "./pages/alternatives/[competitor].tsx", 
+    "./app/**/*.{js,ts,jsx,tsx,mdx}", // Add this just in case
+    "./src/**/*.{js,ts,jsx,tsx,mdx}", // Add this just in case
   ],
   theme: {
     extend: {
       colors: {
-        // Adding your brand color for easy use
         'crave-blue': '#0070f3',
-      }
+        'crave-pink': '#e33cc7',
+        'crave-cyan': '#2ddfff',
+      },
     },
   },
   plugins: [],
