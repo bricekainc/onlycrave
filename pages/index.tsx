@@ -16,17 +16,29 @@ export async function getStaticProps() {
 export default function Home({ creators }: { creators: any[] }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loadingCreator, setLoadingCreator] = useState('');
+  const [isFansnub, setIsFansnub] = useState(false);
+  
+  // Gate States
+  const [gateStage, setGateStage] = useState(1);
+  const [mathChallenge, setMathChallenge] = useState({ q: '', a: 0, opts: [] as number[] });
+  const [captchaSolved, setCaptchaSolved] = useState(false);
+  const [age, setAge] = useState('');
+  const [ageError, setAgeError] = useState(false);
+  
+  // OnlyCrave Theme States
   const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>('system');
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
-  
-  // Simulator State (5% Platform Fee)
-  const [followers, setFollowers] = useState(5000);
-  const [subPrice, setSubPrice] = useState(10);
+  const [loadingCreator, setLoadingCreator] = useState('');
 
   useEffect(() => {
     setMounted(true);
+    // Domain Detection Logic
+    const host = window.location.hostname;
+    if (host.includes('fansnub.com')) {
+      setIsFansnub(true);
+      initMath();
+    }
+    
     const saved = localStorage.getItem('crave-theme') as any;
     if (saved) setThemeMode(saved);
   }, []);
@@ -39,9 +51,99 @@ export default function Home({ creators }: { creators: any[] }) {
     } else {
       setResolvedTheme(themeMode);
     }
-    localStorage.setItem('crave-theme', themeMode);
   }, [themeMode, mounted]);
 
+  const initMath = () => {
+    const n1 = Math.floor(Math.random() * 9) + 1;
+    const n2 = Math.floor(Math.random() * 5) + 1;
+    const ans = n1 + n2;
+    const choices = [ans, ans + 1, ans - 2].sort(() => Math.random() - 0.5);
+    setMathChallenge({ q: `${n1} + ${n2}`, a: ans, opts: choices });
+  };
+
+  const handleMathClick = (val: number) => {
+    if (val === mathChallenge.a) {
+      setCaptchaSolved(true);
+      setTimeout(() => setGateStage(2), 500);
+    }
+  };
+
+  const finalVerify = () => {
+    if (parseInt(age) >= 18) {
+      window.location.href = "https://onlycrave.com" + router.asPath;
+    } else {
+      setAgeError(true);
+    }
+  };
+
+  if (!mounted) return null;
+
+  // --- RENDER CONDITION: FANSNUB GATE ---
+  if (isFansnub) {
+    return (
+      <div style={{ backgroundColor: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
+        <Head>
+          <title>Fansnub Has Moved to OnlyCrave – Exclusive Creator Platform</title>
+          <meta name="description" content="Fansnub (Fansnub.com) is now OnlyCrave.com — an exclusive content platform for creators. Low fees, fast payouts, and the content you crave!" />
+          <meta name="robots" content="noindex, follow" />
+        </Head>
+
+        <div style={{ padding: '80px 20px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 50% 0%, #1a1a2e 0%, #050505 100%)' }}>
+          <div style={{ maxWidth: '600px', width: '100%', zIndex: 2 }}>
+            
+            {gateStage === 1 && (
+              <div id="stage-1" style={{ background: 'rgba(17, 17, 17, 0.8)', padding: '40px', borderRadius: '28px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)', textAlign: 'center' }}>
+                <div style={{ display: 'inline-block', padding: '5px 15px', background: 'rgba(1, 2, 253, 0.2)', border: '1px solid #0102FD', color: '#7071ff', borderRadius: '20px', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '20px' }}>
+                  Secure Access Protocol
+                </div>
+                <h2 style={{ fontSize: '2.2rem', fontWeight: 800, marginBottom: '15px', background: 'linear-gradient(to right, #fff, #ff3e80)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  Fansnub is now OnlyCrave
+                </h2>
+                <p style={{ color: '#a0a0a0', marginBottom: '30px' }}>We've upgraded! All profiles and balances have been migrated to offer better tools and 5% fees.</p>
+                
+                <div style={{ background: '#000', padding: '25px', borderRadius: '20px', border: '1px solid rgba(1, 2, 253, 0.3)' }}>
+                  <span style={{ display: 'block', fontWeight: 600, marginBottom: '15px' }}>Security Check: {mathChallenge.q} = ?</span>
+                  <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                    {mathChallenge.opts.map(opt => (
+                      <button key={opt} onClick={() => handleMathClick(opt)} style={{ background: '#1a1a1a', border: '1px solid #333', color: '#fff', padding: '12px 25px', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {gateStage === 2 && (
+              <div style={{ background: 'rgba(17, 17, 17, 0.9)', padding: '40px', borderRadius: '28px', border: '1px solid #ff3e80', textAlign: 'center' }}>
+                <h2 style={{ color: '#ff3e80', marginBottom: '10px' }}>Adult Content (18+)</h2>
+                <p style={{ color: '#ccc', marginBottom: '25px' }}>Please verify your age to access premium creator profiles.</p>
+                <input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="Age" style={{ background: '#000', border: '2px solid #ff3e80', color: '#fff', padding: '15px', borderRadius: '12px', width: '100px', fontSize: '1.5rem', textAlign: 'center', outline: 'none', marginBottom: '20px' }} />
+                {ageError && <div style={{ color: '#ff4444', marginBottom: '15px', fontWeight: 'bold' }}>Access Denied: 18+ Only.</div>}
+                <button onClick={finalVerify} style={{ width: '100%', padding: '18px', background: '#ff3e80', color: '#fff', border: 'none', borderRadius: '15px', fontWeight: 800, cursor: 'pointer' }}>ENTER ONLYCRAVE</button>
+              </div>
+            )}
+
+            {/* SEO FOOTER FOR FANSNUB */}
+            <footer style={{ marginTop: '50px', background: '#111', padding: '40px', borderRadius: '28px', border: '1px solid #222', textAlign: 'left' }}>
+              <div style={{ color: '#888', fontSize: '14px', lineHeight: '1.7' }}>
+                OnlyCrave is a leading global directory. We have migrated all Fansnub user profiles, active subscriptions, and wallet balances to our new, high-performance platform. 
+                <br/><br/>
+                <strong>Why did we migrate?</strong> Lower 5% platform fees and more reliable streaming. 
+                <strong>Is my account safe?</strong> Yes. Your existing login credentials work perfectly on OnlyCrave.com.
+              </div>
+              <div style={{ marginTop: '20px', display: 'flex', gap: '15px', fontSize: '12px' }}>
+                <Link href="/p/terms" style={{ color: '#7071ff' }}>Terms</Link>
+                <Link href="/p/privacy" style={{ color: '#7071ff' }}>Privacy</Link>
+              </div>
+            </footer>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- RENDER CONDITION: ONLYCRAVE MAIN ---
   const t = {
     bg: resolvedTheme === 'dark' ? '#050505' : '#f8f9fa',
     text: resolvedTheme === 'dark' ? '#ffffff' : '#0a0a0a',
@@ -51,248 +153,66 @@ export default function Home({ creators }: { creators: any[] }) {
     cyan: '#2ddfff',
   };
 
-  const estimatedEarnings = (followers * 0.05 * subPrice * 0.95); // 5% platform fee
-
-  const handleAction = (username: string) => {
-    setLoadingCreator(username);
-    // 5-second beautiful neural processing delay
-    setTimeout(() => {
-      router.push(`/${username}`);
-    }, 5000);
-  };
-
-  const filteredCreators = creators.filter(c =>
-    c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.username?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (!mounted) return null;
-
   return (
-    <div style={{ backgroundColor: t.bg, color: t.text, minHeight: '100vh', transition: '0.4s cubic-bezier(0.4, 0, 0.2, 1)', fontFamily: '"Inter", sans-serif', overflowX: 'hidden' }}>
+    <div style={{ backgroundColor: t.bg, color: t.text, minHeight: '100vh', transition: '0.4s', fontFamily: '"Inter", sans-serif' }}>
       <Head>
-        <title>OnlyCrave | The World's Most Profitable Creator Platform</title>
-        <meta name="description" content="Join OnlyCrave and keep 95% of your earnings. Optimized for M-Pesa, Crypto, and global creators. Discover why OnlyCrave is the best alternative to OnlyFans." />
-        <link rel="canonical" href="https://onlycrave.com" />
+        <title>OnlyCrave | Keep 95% of Your Revenue</title>
+        <meta name="description" content="Fansnub has moved to OnlyCrave. Join the most profitable platform for creators." />
       </Head>
 
-      {/* --- FLOATING THEME SWITCHER --- */}
-      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, display: 'flex', gap: '8px', padding: '6px', background: t.card, backdropFilter: 'blur(15px)', borderRadius: '20px', border: `1px solid ${t.border}` }}>
-        {[
-          { id: 'light', icon: '☀️' },
-          { id: 'system', icon: '💻' },
-          { id: 'dark', icon: '🌙' }
-        ].map((m) => (
-          <button 
-            key={m.id}
-            onClick={() => setThemeMode(m.id as any)}
-            style={{ 
-              border: 'none', background: themeMode === m.id ? t.cyan : 'transparent', 
-              padding: '8px 12px', borderRadius: '15px', cursor: 'pointer', fontSize: '14px',
-              transition: '0.3s'
-            }}
-          >
-            {m.icon}
+      {/* --- FLOATING THEME TOGGLE --- */}
+      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 1000, display: 'flex', background: t.card, padding: '5px', borderRadius: '15px', border: `1px solid ${t.border}`, backdropFilter: 'blur(10px)' }}>
+        {['light', 'system', 'dark'].map(m => (
+          <button key={m} onClick={() => setThemeMode(m as any)} style={{ border: 'none', background: themeMode === m ? t.cyan : 'transparent', color: themeMode === m ? '#000' : t.text, padding: '8px 12px', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }}>
+            {m === 'light' ? '☀️' : m === 'dark' ? '🌙' : '💻'}
           </button>
         ))}
       </div>
 
-      {/* --- AMBIENCE --- */}
-      <div style={{ position: 'fixed', top: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 0 }}>
-        <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '40%', height: '40%', background: `${t.pink}15`, filter: 'blur(120px)' }} />
-        <div style={{ position: 'absolute', bottom: '10%', right: '-5%', width: '40%', height: '40%', background: `${t.cyan}15`, filter: 'blur(120px)' }} />
-      </div>
-
-      <nav style={{ position: 'sticky', top: 0, zIndex: 1000, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${t.border}`, padding: '20px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 950, fontSize: '1.8rem', letterSpacing: '-2px' }}>
-            <span style={{ color: t.pink }}>ONLY</span><span style={{ color: t.cyan }}>CRAVE</span>
-          </div>
-          <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
-            <Link href="/explore" style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: t.text, opacity: 0.7 }}>Explore</Link>
-            <a href="https://onlycrave.com/signup" style={{ background: t.pink, color: '#fff', padding: '12px 24px', borderRadius: '14px', fontSize: '0.8rem', fontWeight: 900, boxShadow: `0 10px 20px ${t.pink}44` }}>SIGN UP</a>
-          </div>
+      <nav style={{ padding: '20px', borderBottom: `1px solid ${t.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', maxWidth: '1200px', margin: '0 auto' }}>
+        <div style={{ fontWeight: 900, fontSize: '1.5rem' }}><span style={{ color: t.pink }}>ONLY</span><span style={{ color: t.cyan }}>CRAVE</span></div>
+        <div style={{ display: 'flex', gap: '20px' }}>
+           <Link href="/explore" style={{ color: t.text, textDecoration: 'none', fontSize: '0.8rem', fontWeight: 700 }}>EXPLORE</Link>
+           <a href="https://onlycrave.com/signup" style={{ background: t.pink, color: '#fff', padding: '8px 16px', borderRadius: '10px', fontSize: '0.8rem', fontWeight: 900 }}>JOIN</a>
         </div>
       </nav>
 
-      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1200px', margin: '0 auto', padding: '80px 20px' }}>
-        
-        {/* --- HERO --- */}
-        <header style={{ textAlign: 'center', marginBottom: '100px' }}>
-          <h1 style={{ fontSize: 'clamp(3rem, 10vw, 6rem)', fontWeight: 1000, lineHeight: 0.9, letterSpacing: '-5px', marginBottom: '30px' }}>
-            EARN <span style={{ color: t.pink }}>MORE</span>.<br/>CRAVE <span style={{ color: t.cyan }}>FREEDOM</span>.
-          </h1>
-          <p style={{ maxWidth: '650px', margin: '0 auto 50px', fontSize: '1.2rem', opacity: 0.6, lineHeight: 1.6 }}>
-            The only platform where you keep <b>95%</b> of your revenue. 
-            Native M-Pesa, Crypto & PayPal support.
-          </p>
-          <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-            <input 
-              style={{ width: '100%', padding: '25px 35px', borderRadius: '30px', border: `1px solid ${t.border}`, background: t.card, color: t.text, fontSize: '1.1rem', outline: 'none', backdropFilter: 'blur(10px)' }}
-              placeholder="Discover verified creators..."
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px' }}>
+        <header style={{ textAlign: 'center', marginBottom: '80px' }}>
+          <h1 style={{ fontSize: '4rem', fontWeight: 900, letterSpacing: '-3px' }}>MONETIZE <span style={{ color: t.cyan }}>EVERYTHING</span></h1>
+          <p style={{ opacity: 0.6 }}>The Fansnub upgrade is here. 5% Fees. Instant Payouts.</p>
         </header>
 
-        {/* --- GRID --- */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px', marginBottom: '120px' }}>
-          {filteredCreators.slice(0, 8).map((c) => (
-            <div key={c.username} className="card-glass" style={{ background: t.card, border: `1px solid ${t.border}`, padding: '40px 30px', borderRadius: '40px', textAlign: 'center', transition: '0.4s' }}>
-              <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 20px' }}>
-                <img src={c.avatar} style={{ width: '100%', height: '100%', borderRadius: '35%', objectFit: 'cover' }} />
-                <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: t.cyan, width: '25px', height: '25px', borderRadius: '50%', border: `4px solid ${t.bg}` }} />
-              </div>
-              <h3 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: '5px' }}>{c.name}</h3>
-              <p style={{ color: t.pink, fontWeight: 800, marginBottom: '25px', fontSize: '0.9rem' }}>@{c.username}</p>
-              
+        {/* --- CREATOR GRID --- */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(250px, 1fr))', gap: '25px' }}>
+          {creators.slice(0, 4).map(c => (
+            <div key={c.username} style={{ background: t.card, border: `1px solid ${t.border}`, padding: '30px', borderRadius: '30px', textAlign: 'center' }}>
+              <img src={c.avatar} style={{ width: '80px', height: '80px', borderRadius: '20px', marginBottom: '15px' }} />
+              <h4 style={{ margin: 0 }}>{c.name}</h4>
+              <p style={{ color: t.pink, fontSize: '0.8rem', marginBottom: '20px' }}>@{c.username}</p>
               <button 
-                onClick={() => handleAction(c.username)}
-                disabled={!!loadingCreator}
-                className={loadingCreator === c.username ? 'loading-btn' : ''}
-                style={{ 
-                  width: '100%', padding: '18px', borderRadius: '20px', border: 'none', 
-                  background: t.text, color: t.bg, fontWeight: 900, cursor: 'pointer',
-                  position: 'relative', overflow: 'hidden'
+                onClick={() => {
+                  setLoadingCreator(c.username);
+                  setTimeout(() => router.push(`/${c.username}`), 5000);
                 }}
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: loadingCreator === c.username ? t.cyan : t.text, color: t.bg, fontWeight: 900, cursor: 'pointer' }}
               >
-                {loadingCreator === c.username ? (
-                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
-                    <div className="spinner" /> AUTHENTICATING...
-                  </span>
-                ) : "VIEW EXCLUSIVE CONTENT"}
+                {loadingCreator === c.username ? 'AUTHENTICATING...' : 'VIEW PROFILE'}
               </button>
             </div>
           ))}
+        </div>
+        
+        {/* --- SEO SECTION --- */}
+        <section style={{ marginTop: '100px', opacity: 0.7, lineHeight: 1.8 }}>
+          <h2 style={{ color: t.pink }}>Fansnub Has Moved to OnlyCrave</h2>
+          <p>Fansnub (Fansnub.com) is now OnlyCrave.com — an exclusive content platform for creators to share and monetize videos, images, and more. Low fees, fast payouts, and the content you crave! Onlycrave is an all-in-one creator subscription platform where independent creators monetize exclusive content with subscriptions, tips, and pay-per-view access.</p>
         </section>
-
-        {/* --- CALCULATOR --- */}
-        <section style={{ background: 'linear-gradient(135deg, #111, #000)', color: '#fff', borderRadius: '50px', padding: '80px 50px', marginBottom: '120px', border: '1px solid #222' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '60px', alignItems: 'center' }}>
-            <div>
-              <h2 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '20px' }}>The 95% Rule.</h2>
-              <p style={{ opacity: 0.6, marginBottom: '40px' }}>We only take a 5% fee. Compare that to the 20% "tax" on other platforms. Your hard work belongs to you.</p>
-              
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: t.cyan, textTransform: 'uppercase', marginBottom: '15px' }}>Estimated Followers: {followers.toLocaleString()}</label>
-                <input type="range" min="1000" max="100000" step="1000" value={followers} onChange={(e) => setFollowers(Number(e.target.value))} style={{ width: '100%', accentColor: t.cyan }} />
-              </div>
-
-              <div>
-                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: t.pink, textTransform: 'uppercase', marginBottom: '15px' }}>Monthly Sub Price: ${subPrice}</label>
-                <input type="range" min="5" max="50" step="1" value={subPrice} onChange={(e) => setSubPrice(Number(e.target.value))} style={{ width: '100%', accentColor: t.pink }} />
-              </div>
-            </div>
-
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '60px', borderRadius: '40px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 900, opacity: 0.5 }}>ESTIMATED TAKE HOME</span>
-              <h4 style={{ fontSize: '5rem', fontWeight: 1000, margin: '10px 0', color: t.cyan }}>${estimatedEarnings.toLocaleString()}</h4>
-              <p style={{ fontSize: '0.9rem', opacity: 0.4 }}>Calculated at 5% conversion rate with 5% flat fee</p>
-              <button style={{ marginTop: '40px', background: t.pink, padding: '20px 40px', borderRadius: '20px', border: 'none', color: '#fff', fontWeight: 900 }}>GET PAID NOW</button>
-            </div>
-          </div>
-        </section>
-
-        {/* --- SEO DEEP CONTENT (1200+ Words Structure) --- */}
-        <section style={{ lineHeight: 1.8, fontSize: '1.1rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '80px' }}>
-             <div style={{ background: t.card, padding: '40px', borderRadius: '30px', border: `1px solid ${t.border}` }}>
-                <h3 style={{ fontWeight: 900, color: t.pink }}>Safe & Inclusive</h3>
-                <p style={{ fontSize: '0.95rem', opacity: 0.7 }}>We welcome all content niches. From fitness and lifestyle to professional adult entertainment, OnlyCrave provides a judgment-free zone with robust security.</p>
-             </div>
-             <div style={{ background: t.card, padding: '40px', borderRadius: '30px', border: `1px solid ${t.border}` }}>
-                <h3 style={{ fontWeight: 900, color: t.cyan }}>Local Globalism</h3>
-                <p style={{ fontSize: '0.95rem', opacity: 0.7 }}>Withdraw via M-Pesa in Kenya, Bank Transfer in Europe, or USDT anywhere. We bridge the gap between creators and their local currency.</p>
-             </div>
-             <div style={{ background: t.card, padding: '40px', borderRadius: '30px', border: `1px solid ${t.border}` }}>
-                <h3 style={{ fontWeight: 900, color: t.text }}>24/7 Concierge</h3>
-                <p style={{ fontSize: '0.95rem', opacity: 0.7 }}>No bots. Real human support for our verified creators to help manage billing, geofencing, and account growth.</p>
-             </div>
-          </div>
-
-          <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '40px' }}>Comparing the Giants: OnlyCrave vs. OnlyFans vs. Fansly</h2>
-          <div style={{ overflowX: 'auto', marginBottom: '80px' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '25px', overflow: 'hidden', border: `1px solid ${t.border}` }}>
-               <thead style={{ background: t.card }}>
-                 <tr>
-                    <th style={{ padding: '25px', textAlign: 'left' }}>Benefit</th>
-                    <th style={{ padding: '25px', color: t.cyan }}>OnlyCrave</th>
-                    <th style={{ padding: '25px', opacity: 0.5 }}>OnlyFans</th>
-                    <th style={{ padding: '25px', opacity: 0.5 }}>Fansly</th>
-                 </tr>
-               </thead>
-               <tbody>
-                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    <td style={{ padding: '20px' }}><b>Creator Payout</b></td>
-                    <td style={{ padding: '20px', fontWeight: 900 }}>95%</td>
-                    <td style={{ padding: '20px' }}>80%</td>
-                    <td style={{ padding: '20px' }}>80%</td>
-                 </tr>
-                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
-                    <td style={{ padding: '20px' }}><b>M-Pesa Support</b></td>
-                    <td style={{ padding: '20px', color: '#10b981' }}>✅ Native</td>
-                    <td style={{ padding: '20px' }}>❌ No</td>
-                    <td style={{ padding: '20px' }}>❌ No</td>
-                 </tr>
-                 <tr>
-                    <td style={{ padding: '20px' }}><b>Crypto Payouts</b></td>
-                    <td style={{ padding: '20px', color: '#10b981' }}>✅ Instant</td>
-                    <td style={{ padding: '20px' }}>❌ No</td>
-                    <td style={{ padding: '20px' }}>⚠️ Limited</td>
-                 </tr>
-               </tbody>
-            </table>
-          </div>
-
-          <div className="seo-text" style={{ opacity: 0.8 }}>
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 900 }}>Direct Fan Support & Content Monetization</h3>
-            <p>OnlyCrave is not just another subscription site; it is a movement toward creator independence. In an era where mainstream social media platforms are shadow-banning creators and payment processors are freezing accounts, OnlyCrave stands as a beacon of stability. Our infrastructure is built on decentralized principles while maintaining the ease of use of a modern fintech app.</p>
-            <p>Whether you are an influencer looking to sell digital products, a fitness coach offering private training videos, or an artist sharing exclusive behind-the-scenes content, our platform is optimized for your success. We handle the complex compliance and payment routing so you can focus on what you do best: creating.</p>
-            
-            <h3 style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '40px' }}>The Creator Revolution: Why 95% Matters</h3>
-            <p>When you earn $10,000 on OnlyFans, they take $2,000. On OnlyCrave, we only take $500. That $1,500 difference covers your rent, your equipment, or your marketing budget. We believe that platforms should be service providers, not digital landlords. By keeping our overhead low and our technology efficient, we pass the savings directly to the people who deserve it most.</p>
-            
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '50px', marginTop: '60px' }}>
-              <div>
-                <h4 style={{ fontWeight: 900 }}>Create Your Account</h4>
-                <p style={{ fontSize: '0.9rem' }}>Verification takes minutes. Once approved, you have instant access to our global payout network. Set your own prices, create bundles, and launch your private community today.</p>
-              </div>
-              <div>
-                <h4 style={{ fontWeight: 900 }}>Secure Direct Payouts</h4>
-                <p style={{ fontSize: '0.9rem' }}>We don't hold your money for weeks. Our automated settlement system ensures that once your funds are cleared, they are available for withdrawal via your preferred local method.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
       </main>
 
-      <style jsx global>{`
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-        
-        body { margin: 0; padding: 0; }
-        .card-glass:hover { transform: translateY(-12px); border-color: ${t.pink} !important; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
-        
-        .loading-btn {
-          background: ${t.cyan} !important;
-          color: #000 !important;
-          cursor: wait !important;
-        }
-
-        .spinner {
-          width: 18px; height: 18px; border: 3px solid rgba(0,0,0,0.1);
-          border-top-color: #000; border-radius: 50%;
-          animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin { to { transform: rotate(360deg); } }
-
-        input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 5px; }
-        
-        @media (max-width: 768px) {
-          .faq-grid { grid-template-columns: 1fr !important; }
-        }
-      `}</style>
+      <footer style={{ textAlign: 'center', padding: '60px', borderTop: `1px solid ${t.border}`, fontSize: '0.7rem', opacity: 0.4 }}>
+        &copy; 2026 ONLYCRAVE // SECURE MIGRATION COMPLETE
+      </footer>
     </div>
   );
 }
