@@ -95,28 +95,47 @@ export default function SmartLanding({ creators }: { creators: any[] }) {
                 <p style={{ color: '#a0a0a0', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: 30 }}>
                   Join the ultimate platform for creators. We've upgraded! Fansnub has merged with OnlyCrave. We've made the switch to improve performance and features, but all your favorite content and creators are exactly where you expect them to be.
                 </p>
-
-               <div style={
-                           /* Premium Destination Card */
-          .dest-card {
-              background: #000; border-radius: 16px; overflow: hidden; margin: 25px 0;
-              border: 1px solid #333; text-align: left; transition: 0.3s;
-          }
-          .dest-card:hover { border-color: var(--blue); }
-          .dest-card img { width: 100%; height: 180px; object-fit: cover; border-bottom: 1px solid #222; }
-          .dest-info { padding: 15px; }
-          .dest-title { font-weight: bold; color: var(--kiwi); font-size: 1rem; margin-bottom: 5px; }
-          .dest-url { font-size: 0.8rem; color: var(--blue); font-family: monospace; }
+{/* Premium Destination Preview Card - Inline CSS Implementation */}
+<div style={{
+  background: '#000',
+  borderRadius: '16px',
+  overflow: 'hidden',
+  margin: '25px 0',
+  border: '1px solid #333',
+  textAlign: 'left',
+  transition: '0.3s',
+  boxShadow: '0 10px 30px rgba(0,0,0,0.5)'
+}}>
+  <img 
+    src={creator?.avatar || "https://onlycrave.com/public/img/logo.png"} 
+    alt="Preview" 
+    style={{
+      width: '100%',
+      height: '180px',
+      objectFit: 'cover',
+      borderBottom: '1px solid #222'
+    }}
+  />
+  <div style={{ padding: '15px' }}>
+    <div style={{
+      fontWeight: 'bold',
+      color: '#a8e063', // Kiwi Green
+      fontSize: '1rem',
+      marginBottom: '5px'
+    }}>
+      {creator ? `${creator.name} (@${creator.username}) on OnlyCrave` : "OnlyCrave - Connect with Fans. Earn with Content."}
+    </div>
+    <div style={{
+      fontSize: '0.8rem',
+      color: '#0102FD', // Blue
+      fontFamily: 'monospace',
+      wordBreak: 'break-all'
+    }}>
+      onlycrave.com{router.asPath === '/' ? '' : router.asPath}
+    </div>
+  </div>
+</div>
   
-          @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-                 }>
-                  <img src="${target.image}" alt="Preview">
-                  <div class="dest-info">
-                      <div class="dest-title">${target.title}</div>
-                      <div class="dest-url">onlycrave.com${path}</div>
-                  </div>
-              </div>
-
                 <div style={{ background: '#000', padding: '25px', borderRadius: '20px', border: '1px solid rgba(1, 2, 253, 0.3)', margin: '20px auto' }}>
                   <span style={{ display: 'block', fontWeight: 600, marginBottom: '15px', color: '#fff' }}>Verify you are human: {math.q} = ?</span>
                   <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
