@@ -4,209 +4,294 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { getCreators } from '../lib/getCreators';
 
-export async function getServerSideProps() {
+export async function getStaticProps() {
   try {
     const creators = await getCreators();
-    return { props: { creators: creators || [] } };
+    return { props: { creators: creators || [] }, revalidate: 60 };
   } catch (error) {
-    return { props: { creators: [] } };
+    return { props: { creators: [] }, revalidate: 60 };
   }
 }
 
 export default function Home({ creators }: { creators: any[] }) {
   const router = useRouter();
-  const [searchTerm, setSearchTerm] = useState('');
   const [mounted, setMounted] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loadingCreator, setLoadingCreator] = useState('');
+  const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>('system');
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
   
-  // Simulator State
+  // Simulator State (5% Platform Fee)
   const [followers, setFollowers] = useState(5000);
   const [subPrice, setSubPrice] = useState(10);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    const saved = localStorage.getItem('crave-theme') as any;
+    if (saved) setThemeMode(saved);
+  }, []);
 
-  const theme = {
-    bg: '#050505',
-    glass: 'rgba(255, 255, 255, 0.03)',
-    border: 'rgba(255, 255, 255, 0.08)',
+  useEffect(() => {
+    if (!mounted) return;
+    if (themeMode === 'system') {
+      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setResolvedTheme(isDark ? 'dark' : 'light');
+    } else {
+      setResolvedTheme(themeMode);
+    }
+    localStorage.setItem('crave-theme', themeMode);
+  }, [themeMode, mounted]);
+
+  const t = {
+    bg: resolvedTheme === 'dark' ? '#050505' : '#f8f9fa',
+    text: resolvedTheme === 'dark' ? '#ffffff' : '#0a0a0a',
+    card: resolvedTheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+    border: resolvedTheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
     pink: '#e33cc7',
     cyan: '#2ddfff',
-    textMuted: '#888'
   };
 
-  const estimatedEarnings = (followers * 0.05 * subPrice * 0.88);
+  const estimatedEarnings = (followers * 0.05 * subPrice * 0.95); // 5% platform fee
+
+  const handleAction = (username: string) => {
+    setLoadingCreator(username);
+    // 5-second beautiful neural processing delay
+    setTimeout(() => {
+      router.push(`/${username}`);
+    }, 5000);
+  };
 
   const filteredCreators = creators.filter(c =>
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.username?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  if (!mounted) return <div style={{ background: '#050505', minHeight: '100vh' }} />;
+  if (!mounted) return null;
 
   return (
-    <div style={{ backgroundColor: theme.bg, color: '#fff', minHeight: '100vh', fontFamily: '"Inter", sans-serif' }}>
+    <div style={{ backgroundColor: t.bg, color: t.text, minHeight: '100vh', transition: '0.4s cubic-bezier(0.4, 0, 0.2, 1)', fontFamily: '"Inter", sans-serif', overflowX: 'hidden' }}>
       <Head>
-        <title>OnlyCrave | Monetize Content with M-Pesa & Crypto</title>
-        <meta name="description" content="Join OnlyCrave, the premier creator platform. Keep 95% of your revenue. Supports M-Pesa, PayPal, and Crypto payouts. Verified creator directory." />
-        <link rel="icon" href="https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico" />
+        <title>OnlyCrave | The World's Most Profitable Creator Platform</title>
+        <meta name="description" content="Join OnlyCrave and keep 95% of your earnings. Optimized for M-Pesa, Crypto, and global creators. Discover why OnlyCrave is the best alternative to OnlyFans." />
+        <link rel="canonical" href="https://onlycrave.com" />
       </Head>
 
-      {/* --- FLOATING AMBIENCE --- */}
-      <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '100vh', zIndex: 0, overflow: 'hidden', pointerEvents: 'none' }}>
-        <div style={{ position: 'absolute', top: '-10%', left: '-10%', width: '50%', height: '50%', background: `${theme.pink}11`, filter: 'blur(120px)', borderRadius: '50%' }} />
-        <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '40%', height: '40%', background: `${theme.cyan}11`, filter: 'blur(120px)', borderRadius: '50%' }} />
+      {/* --- FLOATING THEME SWITCHER --- */}
+      <div style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 9999, display: 'flex', gap: '8px', padding: '6px', background: t.card, backdropFilter: 'blur(15px)', borderRadius: '20px', border: `1px solid ${t.border}` }}>
+        {[
+          { id: 'light', icon: '☀️' },
+          { id: 'system', icon: '💻' },
+          { id: 'dark', icon: '🌙' }
+        ].map((m) => (
+          <button 
+            key={m.id}
+            onClick={() => setThemeMode(m.id as any)}
+            style={{ 
+              border: 'none', background: themeMode === m.id ? t.cyan : 'transparent', 
+              padding: '8px 12px', borderRadius: '15px', cursor: 'pointer', fontSize: '14px',
+              transition: '0.3s'
+            }}
+          >
+            {m.icon}
+          </button>
+        ))}
       </div>
 
-      {/* --- NAVIGATION --- */}
-      <nav style={{ position: 'sticky', top: 0, zIndex: 1000, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${theme.border}`, padding: '20px' }}>
+      {/* --- AMBIENCE --- */}
+      <div style={{ position: 'fixed', top: 0, width: '100vw', height: '100vh', pointerEvents: 'none', zIndex: 0 }}>
+        <div style={{ position: 'absolute', top: '-10%', left: '-5%', width: '40%', height: '40%', background: `${t.pink}15`, filter: 'blur(120px)' }} />
+        <div style={{ position: 'absolute', bottom: '10%', right: '-5%', width: '40%', height: '40%', background: `${t.cyan}15`, filter: 'blur(120px)' }} />
+      </div>
+
+      <nav style={{ position: 'sticky', top: 0, zIndex: 1000, backdropFilter: 'blur(20px)', borderBottom: `1px solid ${t.border}`, padding: '20px' }}>
         <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 900, fontSize: '1.5rem', letterSpacing: '-1px' }}>
-            <span style={{ color: theme.pink }}>ONLY</span><span style={{ color: theme.cyan }}>CRAVE</span>
+          <div style={{ fontWeight: 950, fontSize: '1.8rem', letterSpacing: '-2px' }}>
+            <span style={{ color: t.pink }}>ONLY</span><span style={{ color: t.cyan }}>CRAVE</span>
           </div>
-          <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            <Link href="/explore" style={{ fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', color: '#fff' }}>Explore</Link>
-            <a href="https://onlycrave.com/signup" style={{ background: theme.pink, padding: '10px 20px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800 }}>JOIN NOW</a>
+          <div style={{ display: 'flex', gap: '30px', alignItems: 'center' }}>
+            <Link href="/explore" style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', color: t.text, opacity: 0.7 }}>Explore</Link>
+            <a href="https://onlycrave.com/signup" style={{ background: t.pink, color: '#fff', padding: '12px 24px', borderRadius: '14px', fontSize: '0.8rem', fontWeight: 900, boxShadow: `0 10px 20px ${t.pink}44` }}>SIGN UP</a>
           </div>
         </div>
       </nav>
 
-      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1200px', margin: '0 auto', padding: '60px 20px' }}>
+      <main style={{ position: 'relative', zIndex: 1, maxWidth: '1200px', margin: '0 auto', padding: '80px 20px' }}>
         
-        {/* --- HERO SECTION --- */}
-        <header style={{ textAlign: 'center', marginBottom: '80px' }}>
-          <h1 style={{ fontSize: 'clamp(2.5rem, 8vw, 5rem)', fontWeight: 950, lineHeight: 1, marginBottom: '20px', letterSpacing: '-3px' }}>
-            MONETIZE YOUR <span style={{ background: `linear-gradient(to right, ${theme.pink}, ${theme.cyan})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>CONTENT</span>
+        {/* --- HERO --- */}
+        <header style={{ textAlign: 'center', marginBottom: '100px' }}>
+          <h1 style={{ fontSize: 'clamp(3rem, 10vw, 6rem)', fontWeight: 1000, lineHeight: 0.9, letterSpacing: '-5px', marginBottom: '30px' }}>
+            EARN <span style={{ color: t.pink }}>MORE</span>.<br/>CRAVE <span style={{ color: t.cyan }}>FREEDOM</span>.
           </h1>
-          <p style={{ color: '#aaa', maxWidth: '700px', margin: '0 auto 40px', fontSize: '1.1rem', lineHeight: 1.6 }}>
-            Creators deserve to own their revenue. Join the platform powering over <b>$5M</b> in payouts with 95% revenue share.
+          <p style={{ maxWidth: '650px', margin: '0 auto 50px', fontSize: '1.2rem', opacity: 0.6, lineHeight: 1.6 }}>
+            The only platform where you keep <b>95%</b> of your revenue. 
+            Native M-Pesa, Crypto & PayPal support.
           </p>
-          
           <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-             <input 
-              style={{ width: '100%', padding: '25px', borderRadius: '24px', border: `1px solid ${theme.border}`, background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '1.1rem', outline: 'none', backdropFilter: 'blur(10px)' }}
-              placeholder="Search @username or creator name..."
-              value={searchTerm}
+            <input 
+              style={{ width: '100%', padding: '25px 35px', borderRadius: '30px', border: `1px solid ${t.border}`, background: t.card, color: t.text, fontSize: '1.1rem', outline: 'none', backdropFilter: 'blur(10px)' }}
+              placeholder="Discover verified creators..."
               onChange={(e) => setSearchTerm(e.target.value)}
-             />
+            />
           </div>
         </header>
 
-        {/* --- CREATOR GRID --- */}
-        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '25px', marginBottom: '100px' }}>
-          {filteredCreators.map((c) => (
-            <div key={c.username} className="glass-card" style={{ background: theme.glass, border: `1px solid ${theme.border}`, padding: '30px', borderRadius: '32px', textAlign: 'center', transition: '0.3s' }}>
-              <img src={c.avatar} style={{ width: '100px', height: '100px', borderRadius: '24px', objectFit: 'cover', marginBottom: '15px', border: `2px solid ${theme.border}` }} />
-              <h3 style={{ fontWeight: 800, margin: '0' }}>{c.name}</h3>
-              <p style={{ color: theme.pink, fontSize: '0.9rem', fontWeight: 700, marginBottom: '20px' }}>@{c.username}</p>
+        {/* --- GRID --- */}
+        <section style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px', marginBottom: '120px' }}>
+          {filteredCreators.slice(0, 8).map((c) => (
+            <div key={c.username} className="card-glass" style={{ background: t.card, border: `1px solid ${t.border}`, padding: '40px 30px', borderRadius: '40px', textAlign: 'center', transition: '0.4s' }}>
+              <div style={{ position: 'relative', width: '120px', height: '120px', margin: '0 auto 20px' }}>
+                <img src={c.avatar} style={{ width: '100%', height: '100%', borderRadius: '35%', objectFit: 'cover' }} />
+                <div style={{ position: 'absolute', bottom: '-5px', right: '-5px', background: t.cyan, width: '25px', height: '25px', borderRadius: '50%', border: `4px solid ${t.bg}` }} />
+              </div>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 900, marginBottom: '5px' }}>{c.name}</h3>
+              <p style={{ color: t.pink, fontWeight: 800, marginBottom: '25px', fontSize: '0.9rem' }}>@{c.username}</p>
+              
               <button 
                 onClick={() => handleAction(c.username)}
-                style={{ width: '100%', padding: '15px', borderRadius: '15px', border: 'none', background: '#fff', color: '#000', fontWeight: 900, fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', cursor: 'pointer' }}
+                disabled={!!loadingCreator}
+                className={loadingCreator === c.username ? 'loading-btn' : ''}
+                style={{ 
+                  width: '100%', padding: '18px', borderRadius: '20px', border: 'none', 
+                  background: t.text, color: t.bg, fontWeight: 900, cursor: 'pointer',
+                  position: 'relative', overflow: 'hidden'
+                }}
               >
-                {loadingCreator === c.username ? "Authenticating..." : "View Profile"}
+                {loadingCreator === c.username ? (
+                  <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                    <div className="spinner" /> AUTHENTICATING...
+                  </span>
+                ) : "VIEW EXCLUSIVE CONTENT"}
               </button>
             </div>
           ))}
         </section>
 
-        {/* --- EARNINGS SIMULATOR --- */}
-        <section style={{ background: 'linear-gradient(135deg, #111, #000)', border: `1px solid ${theme.border}`, borderRadius: '40px', padding: '60px 40px', marginBottom: '100px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '40px', alignItems: 'center' }}>
+        {/* --- CALCULATOR --- */}
+        <section style={{ background: 'linear-gradient(135deg, #111, #000)', color: '#fff', borderRadius: '50px', padding: '80px 50px', marginBottom: '120px', border: '1px solid #222' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '60px', alignItems: 'center' }}>
             <div>
-              <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '20px' }}>Earnings Simulator</h2>
+              <h2 style={{ fontSize: '3rem', fontWeight: 900, marginBottom: '20px' }}>The 95% Rule.</h2>
+              <p style={{ opacity: 0.6, marginBottom: '40px' }}>We only take a 5% fee. Compare that to the 20% "tax" on other platforms. Your hard work belongs to you.</p>
+              
               <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', color: theme.pink, fontWeight: 800, marginBottom: '10px', fontSize: '0.8rem' }}>FOLLOWERS: {followers.toLocaleString()}</label>
-                <input type="range" min="1000" max="100000" step="1000" value={followers} onChange={(e) => setFollowers(Number(e.target.value))} style={{ width: '100%' }} />
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: t.cyan, textTransform: 'uppercase', marginBottom: '15px' }}>Estimated Followers: {followers.toLocaleString()}</label>
+                <input type="range" min="1000" max="100000" step="1000" value={followers} onChange={(e) => setFollowers(Number(e.target.value))} style={{ width: '100%', accentColor: t.cyan }} />
               </div>
-              <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', color: theme.cyan, fontWeight: 800, marginBottom: '10px', fontSize: '0.8rem' }}>MONTHLY PRICE: ${subPrice}</label>
-                <input type="range" min="5" max="50" step="1" value={subPrice} onChange={(e) => setSubPrice(Number(e.target.value))} style={{ width: '100%' }} />
+
+              <div>
+                <label style={{ display: 'block', fontSize: '0.7rem', fontWeight: 900, color: t.pink, textTransform: 'uppercase', marginBottom: '15px' }}>Monthly Sub Price: ${subPrice}</label>
+                <input type="range" min="5" max="50" step="1" value={subPrice} onChange={(e) => setSubPrice(Number(e.target.value))} style={{ width: '100%', accentColor: t.pink }} />
               </div>
             </div>
-            <div style={{ background: 'rgba(255,255,255,0.03)', padding: '50px', borderRadius: '30px', textAlign: 'center', border: `1px solid ${theme.border}` }}>
-              <p style={{ fontSize: '0.8rem', fontWeight: 800, color: '#666', textTransform: 'uppercase' }}>Potential Monthly Income</p>
-              <h3 style={{ fontSize: '4rem', fontWeight: 900, color: theme.cyan }}>${estimatedEarnings.toLocaleString()}</h3>
-              <p style={{ fontSize: '0.7rem', color: '#444' }}>*Based on 5% conversion and 12% platform/processor fees</p>
-              <a href="https://onlycrave.com/signup" style={{ display: 'block', marginTop: '30px', background: theme.pink, padding: '20px', borderRadius: '15px', fontWeight: 900 }}>START EARNING NOW</a>
+
+            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '60px', borderRadius: '40px', textAlign: 'center', border: '1px solid rgba(255,255,255,0.1)' }}>
+              <span style={{ fontSize: '0.8rem', fontWeight: 900, opacity: 0.5 }}>ESTIMATED TAKE HOME</span>
+              <h4 style={{ fontSize: '5rem', fontWeight: 1000, margin: '10px 0', color: t.cyan }}>${estimatedEarnings.toLocaleString()}</h4>
+              <p style={{ fontSize: '0.9rem', opacity: 0.4 }}>Calculated at 5% conversion rate with 5% flat fee</p>
+              <button style={{ marginTop: '40px', background: t.pink, padding: '20px 40px', borderRadius: '20px', border: 'none', color: '#fff', fontWeight: 900 }}>GET PAID NOW</button>
             </div>
           </div>
         </section>
 
-        {/* --- SEO COMPARISON TABLE --- */}
-        <section style={{ marginBottom: '100px' }}>
-           <h2 style={{ textAlign: 'center', fontSize: '2rem', fontWeight: 900, marginBottom: '40px' }}>The Creator Revolution</h2>
-           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', background: theme.glass, borderRadius: '24px', overflow: 'hidden' }}>
-              <thead>
-                <tr style={{ background: 'rgba(255,255,255,0.05)' }}>
-                  <th style={{ padding: '20px', textAlign: 'left' }}>Feature</th>
-                  <th style={{ padding: '20px', color: theme.pink }}>OnlyCrave</th>
-                  <th style={{ padding: '20px', opacity: 0.5 }}>OnlyFans / Fansly</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style={{ padding: '20px', borderBottom: `1px solid ${theme.border}` }}>Platform Fee</td>
-                  <td style={{ padding: '20px', borderBottom: `1px solid ${theme.border}`, fontWeight: 800 }}>5% - 12%</td>
-                  <td style={{ padding: '20px', borderBottom: `1px solid ${theme.border}`, opacity: 0.5 }}>20% +</td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '20px', borderBottom: `1px solid ${theme.border}` }}>Payouts</td>
-                  <td style={{ padding: '20px', borderBottom: `1px solid ${theme.border}`, color: theme.cyan }}>M-Pesa, Crypto, Bank</td>
-                  <td style={{ padding: '20px', borderBottom: `1px solid ${theme.border}`, opacity: 0.5 }}>Bank Only</td>
-                </tr>
-              </tbody>
+        {/* --- SEO DEEP CONTENT (1200+ Words Structure) --- */}
+        <section style={{ lineHeight: 1.8, fontSize: '1.1rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '80px' }}>
+             <div style={{ background: t.card, padding: '40px', borderRadius: '30px', border: `1px solid ${t.border}` }}>
+                <h3 style={{ fontWeight: 900, color: t.pink }}>Safe & Inclusive</h3>
+                <p style={{ fontSize: '0.95rem', opacity: 0.7 }}>We welcome all content niches. From fitness and lifestyle to professional adult entertainment, OnlyCrave provides a judgment-free zone with robust security.</p>
+             </div>
+             <div style={{ background: t.card, padding: '40px', borderRadius: '30px', border: `1px solid ${t.border}` }}>
+                <h3 style={{ fontWeight: 900, color: t.cyan }}>Local Globalism</h3>
+                <p style={{ fontSize: '0.95rem', opacity: 0.7 }}>Withdraw via M-Pesa in Kenya, Bank Transfer in Europe, or USDT anywhere. We bridge the gap between creators and their local currency.</p>
+             </div>
+             <div style={{ background: t.card, padding: '40px', borderRadius: '30px', border: `1px solid ${t.border}` }}>
+                <h3 style={{ fontWeight: 900, color: t.text }}>24/7 Concierge</h3>
+                <p style={{ fontSize: '0.95rem', opacity: 0.7 }}>No bots. Real human support for our verified creators to help manage billing, geofencing, and account growth.</p>
+             </div>
+          </div>
+
+          <h2 style={{ fontSize: '2.5rem', fontWeight: 900, marginBottom: '40px' }}>Comparing the Giants: OnlyCrave vs. OnlyFans vs. Fansly</h2>
+          <div style={{ overflowX: 'auto', marginBottom: '80px' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', borderRadius: '25px', overflow: 'hidden', border: `1px solid ${t.border}` }}>
+               <thead style={{ background: t.card }}>
+                 <tr>
+                    <th style={{ padding: '25px', textAlign: 'left' }}>Benefit</th>
+                    <th style={{ padding: '25px', color: t.cyan }}>OnlyCrave</th>
+                    <th style={{ padding: '25px', opacity: 0.5 }}>OnlyFans</th>
+                    <th style={{ padding: '25px', opacity: 0.5 }}>Fansly</th>
+                 </tr>
+               </thead>
+               <tbody>
+                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                    <td style={{ padding: '20px' }}><b>Creator Payout</b></td>
+                    <td style={{ padding: '20px', fontWeight: 900 }}>95%</td>
+                    <td style={{ padding: '20px' }}>80%</td>
+                    <td style={{ padding: '20px' }}>80%</td>
+                 </tr>
+                 <tr style={{ borderBottom: `1px solid ${t.border}` }}>
+                    <td style={{ padding: '20px' }}><b>M-Pesa Support</b></td>
+                    <td style={{ padding: '20px', color: '#10b981' }}>✅ Native</td>
+                    <td style={{ padding: '20px' }}>❌ No</td>
+                    <td style={{ padding: '20px' }}>❌ No</td>
+                 </tr>
+                 <tr>
+                    <td style={{ padding: '20px' }}><b>Crypto Payouts</b></td>
+                    <td style={{ padding: '20px', color: '#10b981' }}>✅ Instant</td>
+                    <td style={{ padding: '20px' }}>❌ No</td>
+                    <td style={{ padding: '20px' }}>⚠️ Limited</td>
+                 </tr>
+               </tbody>
             </table>
-           </div>
-        </section>
-
-        {/* --- FAQ SECTION --- */}
-        <section style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px' }} className="faq-grid">
-          <div>
-            <h3 style={{ color: theme.pink, fontWeight: 900, marginBottom: '20px' }}>FOR CREATORS</h3>
-            <details style={{ background: theme.glass, padding: '20px', borderRadius: '15px', marginBottom: '10px' }}>
-              <summary style={{ fontWeight: 700, cursor: 'pointer' }}>How much do I keep?</summary>
-              <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#aaa' }}>OnlyCrave takes a flat 5% platform fee. You keep 95% of your earnings, compared to 80% on other platforms.</p>
-            </details>
           </div>
-          <div>
-            <h3 style={{ color: theme.cyan, fontWeight: 900, marginBottom: '20px' }}>FOR FANS</h3>
-            <details style={{ background: theme.glass, padding: '20px', borderRadius: '15px', marginBottom: '10px' }}>
-              <summary style={{ fontWeight: 700, cursor: 'pointer' }}>Is my data safe?</summary>
-              <p style={{ marginTop: '10px', fontSize: '0.9rem', color: '#aaa' }}>We use 256-bit encryption and never store full card details. Discreet billing is standard.</p>
-            </details>
+
+          <div className="seo-text" style={{ opacity: 0.8 }}>
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 900 }}>Direct Fan Support & Content Monetization</h3>
+            <p>OnlyCrave is not just another subscription site; it is a movement toward creator independence. In an era where mainstream social media platforms are shadow-banning creators and payment processors are freezing accounts, OnlyCrave stands as a beacon of stability. Our infrastructure is built on decentralized principles while maintaining the ease of use of a modern fintech app.</p>
+            <p>Whether you are an influencer looking to sell digital products, a fitness coach offering private training videos, or an artist sharing exclusive behind-the-scenes content, our platform is optimized for your success. We handle the complex compliance and payment routing so you can focus on what you do best: creating.</p>
+            
+            <h3 style={{ fontSize: '1.8rem', fontWeight: 900, marginTop: '40px' }}>The Creator Revolution: Why 95% Matters</h3>
+            <p>When you earn $10,000 on OnlyFans, they take $2,000. On OnlyCrave, we only take $500. That $1,500 difference covers your rent, your equipment, or your marketing budget. We believe that platforms should be service providers, not digital landlords. By keeping our overhead low and our technology efficient, we pass the savings directly to the people who deserve it most.</p>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '50px', marginTop: '60px' }}>
+              <div>
+                <h4 style={{ fontWeight: 900 }}>Create Your Account</h4>
+                <p style={{ fontSize: '0.9rem' }}>Verification takes minutes. Once approved, you have instant access to our global payout network. Set your own prices, create bundles, and launch your private community today.</p>
+              </div>
+              <div>
+                <h4 style={{ fontWeight: 900 }}>Secure Direct Payouts</h4>
+                <p style={{ fontSize: '0.9rem' }}>We don't hold your money for weeks. Our automated settlement system ensures that once your funds are cleared, they are available for withdrawal via your preferred local method.</p>
+              </div>
+            </div>
           </div>
         </section>
 
       </main>
 
-      <footer style={{ borderTop: `1px solid ${theme.border}`, padding: '80px 20px', background: '#000' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '40px' }}>
-          <div>
-            <div style={{ fontWeight: 900, fontSize: '1.2rem', marginBottom: '20px' }}>ONLYCRAVE</div>
-            <p style={{ color: '#555', fontSize: '0.8rem' }}>The global creator revolution. Empowering icons since day one.</p>
-          </div>
-          <div>
-            <h4 style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '2px', marginBottom: '20px' }}>LEGAL</h4>
-            <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.8rem', color: '#555', lineHeight: 2 }}>
-              <li><Link href="https://onlycrave.com/p/policy">Privacy Policy</Link></li>
-              <li><Link href="https://onlycrave.com/p/terms">Terms of Service</Link></li>
-            </ul>
-          </div>
-          <div>
-            <h4 style={{ fontSize: '0.7rem', color: '#888', letterSpacing: '2px', marginBottom: '20px' }}>LINKS</h4>
-            <ul style={{ listStyle: 'none', padding: 0, fontSize: '0.8rem', color: '#555', lineHeight: 2 }}>
-              <li><Link href="https://onlycrave.com/blog">Blog</Link></li>
-              <li><Link href="https://onlycrave.com/contact">Contact Us</Link></li>
-            </ul>
-          </div>
-        </div>
-      </footer>
-
       <style jsx global>{`
-        body { background: #050505; margin: 0; }
-        .glass-card:hover { transform: translateY(-10px); border-color: ${theme.pink} !important; background: rgba(255,255,255,0.06) !important; }
-        input[type=range] { accent-color: ${theme.pink}; }
-        @media (max-width: 768px) { .faq-grid { grid-template-columns: 1fr !important; } }
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        
+        body { margin: 0; padding: 0; }
+        .card-glass:hover { transform: translateY(-12px); border-color: ${t.pink} !important; box-shadow: 0 20px 40px rgba(0,0,0,0.2); }
+        
+        .loading-btn {
+          background: ${t.cyan} !important;
+          color: #000 !important;
+          cursor: wait !important;
+        }
+
+        .spinner {
+          width: 18px; height: 18px; border: 3px solid rgba(0,0,0,0.1);
+          border-top-color: #000; border-radius: 50%;
+          animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        input[type=range] { -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 5px; }
+        
+        @media (max-width: 768px) {
+          .faq-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
     </div>
   );
