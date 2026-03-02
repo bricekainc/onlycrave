@@ -1,42 +1,33 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { getCreators } from '../lib/getCreators';
 
-export async function getServerSideProps() {
+export async function getStaticProps() {
   try {
     const creators = await getCreators();
-    return { props: { creators: creators || [] } };
+    return { props: { creators: creators || [] }, revalidate: 60 };
   } catch (error) {
-    console.error("Fetch error:", error);
-    return { props: { creators: [] } };
+    return { props: { creators: [] }, revalidate: 60 };
   }
 }
 
 export default function Home({ creators }: { creators: any[] }) {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
-  const [mounted, setMounted] = useState(false);
-  const [isDarkMode, setIsDarkMode] = useState(false);
   const [loadingCreator, setLoadingCreator] = useState('');
+  
+  // Earnings Simulator State
+  const [followers, setFollowers] = useState(1000);
+  const [subPrice, setSubPrice] = useState(5);
+  const [estimatedEarnings, setEstimatedEarnings] = useState(0);
 
-  // Fix Hydration issues by ensuring theme logic only runs on client
   useEffect(() => {
-    setMounted(true);
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDarkMode(systemPrefersDark);
-  }, []);
-
-  const theme = {
-    bg: isDarkMode ? '#050505' : '#ffffff',
-    card: isDarkMode ? 'rgba(255, 255, 255, 0.03)' : 'rgba(0, 0, 0, 0.02)',
-    glass: isDarkMode ? 'rgba(22, 22, 26, 0.7)' : 'rgba(255, 255, 255, 0.8)',
-    text: isDarkMode ? '#ffffff' : '#1a1a1b',
-    primary: '#e33cc7', 
-    secondary: '#2ddfff', 
-    accent: '#0102FD',
-    border: isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
-  };
+    // Logic: 5% conversion rate, 88% payout (after platform/processor fees)
+    const calc = (followers * 0.05) * subPrice * 0.88;
+    setEstimatedEarnings(calc);
+  }, [followers, subPrice]);
 
   const filteredCreators = creators.filter(c =>
     c.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -45,205 +36,227 @@ export default function Home({ creators }: { creators: any[] }) {
 
   const handleAction = (username: string) => {
     setLoadingCreator(username);
-    // 2.2s delay for "security verification" - boosts dwell time and SEO
-    setTimeout(() => {
-      router.push(`/${username}`);
-    }, 2200);
+    setTimeout(() => { router.push(`/${username}`); }, 2200);
   };
 
-  // Prevent flash of unstyled content
-  if (!mounted) return <div style={{ backgroundColor: '#050505', minHeight: '100vh' }} />;
-
   return (
-    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', transition: '0.3s', fontFamily: '"Inter", sans-serif' }}>
+    <div className="min-h-screen bg-[#050505] text-zinc-100 font-sans selection:bg-pink-500/40">
       <Head>
-        <title>OnlyCrave Search | Discover Verified Global Creators</title>
-        <meta name="description" content="Search the official OnlyCrave directory. Discover top influencers, compare OnlyCrave vs OnlyFans, and enjoy secure M-Pesa, Crypto, and PayPal payments." />
-        <meta name="keywords" content="OnlyCrave search, OnlyCrave vs Fansly, OnlyFans Mpesa, OnlyCrave creators, verified influencer directory, secure creator platform" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
-        <link rel="icon" href="https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico" />
-        <link rel="canonical" href="https://onlycrave.com" />
-        
-        {/* Structured Data for SEO */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "FAQPage",
-          "mainEntity": [
-            { "@type": "Question", "name": "Is OnlyCrave better than OnlyFans for African creators?", "acceptedAnswer": { "@type": "Answer", "text": "Yes, OnlyCrave natively supports M-Pesa, allowing creators in Kenya and other regions to withdraw funds instantly, a feature OnlyFans lacks." }},
-            { "@type": "Question", "name": "How do I find verified creators on OnlyCrave?", "acceptedAnswer": { "@type": "Answer", "text": "Use the official OnlyCrave Search directory to find influencers with the blue verification badge." }}
-          ]
-        })}} />
+        <title>OnlyCrave | Official Search & Creator Monetization Hub</title>
+        <meta name="description" content="The premier subscription platform for exclusive content. Support creators via M-Pesa, Crypto, and PayPal. 95% revenue share for creators." />
+        <meta name="keywords" content="OnlyCrave search, OnlyFans alternative M-Pesa, earn from content, creator economy, crypto subscriptions" />
       </Head>
 
-      {/* --- 3D LOGO & NAV --- */}
-      <nav style={{ padding: '30px 20px', display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100, backdropFilter: 'blur(12px)', backgroundColor: `${theme.bg}88` }}>
-        <div className="logo-3d">
-          <span className="logo-only">ONLY</span><span className="logo-crave">CRAVE</span>
+      {/* --- FUTURISTIC NAV --- */}
+      <nav className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/5 py-4 px-6">
+        <div className="max-w-7xl mx-auto flex justify-between items-center">
+          <div className="text-2xl font-black italic tracking-tighter">
+            <span className="text-pink-500 drop-shadow-[0_0_8px_rgba(236,72,153,0.5)]">ONLY</span>
+            <span className="text-cyan-400">CRAVE</span>
+          </div>
+          <div className="hidden md:flex gap-6 text-xs font-bold tracking-widest uppercase italic">
+            <Link href="/explore" className="hover:text-pink-500 transition">Explore</Link>
+            <Link href="https://onlycrave.com/login" className="hover:text-pink-500 transition">Login</Link>
+            <Link href="https://onlycrave.com/signup" className="bg-pink-600 px-4 py-2 rounded-lg hover:bg-pink-700 transition">Join Now</Link>
+          </div>
         </div>
       </nav>
 
-      {/* --- HERO --- */}
-      <header style={{ textAlign: 'center', padding: '60px 20px' }}>
-        <h1 style={{ fontSize: 'clamp(2.5rem, 7vw, 4rem)', fontWeight: '900', marginBottom: '20px', letterSpacing: '-1px' }}>
-          The World's Most <span style={{ color: theme.primary }}>Verified</span> Search
-        </h1>
-        <div className="search-pill-container">
-          <input 
-            className="search-input"
-            type="text" 
-            placeholder="Search by name or @username..." 
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+      {/* --- HERO & SEARCH --- */}
+      <header className="relative pt-24 pb-20 px-6 overflow-hidden">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[400px] bg-pink-600/10 blur-[120px] rounded-full -z-10"></div>
+        <div className="max-w-4xl mx-auto text-center">
+          <h1 className="text-5xl md:text-8xl font-black italic tracking-tighter uppercase leading-none mb-6">
+            Monetize Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400">Content</span>
+          </h1>
+          <p className="text-zinc-400 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed">
+            Creators deserve to own their revenue. Join the premier platform for exclusive content, digital products, and authentic fan engagement.
+          </p>
+
+          <div className="relative max-w-xl mx-auto mb-4">
+            <input 
+              type="text"
+              placeholder="Search @username or creator name..."
+              className="w-full bg-zinc-900/50 border border-white/10 px-8 py-5 rounded-2xl outline-none focus:border-pink-500/50 transition-all text-lg backdrop-blur-md"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <div className="flex justify-center gap-4 opacity-60">
+            <span className="text-[10px] font-bold tracking-widest uppercase">Verified Hubs: {creators.length}</span>
+            <span className="text-[10px] font-bold tracking-widest uppercase text-green-500">Payouts: $5M+</span>
+          </div>
         </div>
-        <p style={{ marginTop: '20px', opacity: 0.6, fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
-          Indexing {creators.length} Premium Profiles
-        </p>
       </header>
 
-      {/* --- CREATOR GRID --- */}
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '30px' }}>
+      <main className="max-w-7xl mx-auto px-6">
+        {/* --- CREATOR RESULTS --- */}
+        <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-32">
           {filteredCreators.map((c) => (
-            <div key={c.username} className="creator-card">
-              <div className="avatar-wrapper">
-                <img src={c.avatar} alt={`${c.name} OnlyCrave Profile`} className="creator-img" />
-              </div>
-              <h2 style={{ fontSize: '1.2rem', margin: '10px 0 5px' }}>{c.name}</h2>
-              <p style={{ color: theme.primary, fontWeight: '700', marginBottom: '20px' }}>@{c.username}</p>
-              
+            <div key={c.username} className="bg-zinc-900/40 border border-white/5 p-6 rounded-[2rem] hover:border-pink-500/40 transition-all group">
+              <img src={c.avatar} className="w-24 h-24 rounded-2xl object-cover mx-auto mb-4 border-2 border-white/5" alt={c.name} />
+              <h2 className="text-center font-bold italic uppercase tracking-tighter">{c.name}</h2>
+              <p className="text-center text-pink-500 text-xs font-black mb-6 italic tracking-widest">@{c.username}</p>
               <button 
-                onClick={() => handleAction(c.username)} 
-                className={`pill-btn-3d ${loadingCreator === c.username ? 'loading' : ''}`}
-                disabled={loadingCreator !== ''}
+                onClick={() => handleAction(c.username)}
+                className="w-full bg-white text-black text-[10px] font-black py-4 rounded-xl uppercase tracking-widest hover:bg-pink-500 hover:text-white transition-all shadow-xl"
               >
-                {loadingCreator === c.username ? "Authenticating..." : "View Exclusive Profile"}
+                {loadingCreator === c.username ? "AUTHENTICATING..." : "VIEW EXCLUSIVE MIRROR"}
               </button>
             </div>
           ))}
-        </div>
+        </section>
 
-        {/* --- SEO ARTICLE: GLOBAL RANKING --- */}
-        <article className="seo-article">
-          <section>
-            <h2>The Global Search for OnlyCrave Excellence</h2>
-            <p>
-              As the digital content landscape shifts, users are increasingly moving toward <strong>OnlyCrave</strong> as their primary hub for creator interaction. 
-              Our <strong>official search engine</strong> is optimized to provide the fastest route to verified content, cutting through the noise found on generic social platforms.
-            </p>
-          </section>
-
-          {/* Comparison Table for SEO */}
-          <div className="comparison-table-wrapper">
-            <h3>Comparison: OnlyCrave vs Alternatives</h3>
-            <table className="comparison-table">
-              <thead>
-                <tr>
-                  <th>Benefits</th>
-                  <th>OnlyCrave</th>
-                  <th>OnlyFans / Fansly</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><strong>Local Payments</strong></td>
-                  <td style={{ color: theme.secondary }}>M-Pesa / Crypto / PayPal</td>
-                  <td>Credit Card Only</td>
-                </tr>
-                <tr>
-                  <td><strong>Privacy Level</strong></td>
-                  <td>High (Discreet Billing)</td>
-                  <td>Standard</td>
-                </tr>
-                <tr>
-                  <td><strong>Streaming Speed</strong></td>
-                  <td>4K Ultra Optimized</td>
-                  <td>Varies</td>
-                </tr>
-              </tbody>
-            </table>
+        {/* --- EARNINGS SIMULATOR --- */}
+        <section className="bg-gradient-to-br from-zinc-900 to-black border border-white/5 rounded-[3rem] p-8 md:p-16 mb-32 relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 text-6xl opacity-10 font-black italic uppercase">Calculator</div>
+          <div className="grid md:grid-cols-2 gap-16 items-center">
+            <div>
+              <h2 className="text-4xl font-black italic uppercase tracking-tighter mb-4">Creator Earnings Simulator</h2>
+              <p className="text-zinc-400 mb-8">Calculate how much you can earn based on followers and subscription rates.</p>
+              
+              <div className="space-y-8">
+                <div>
+                  <label className="block text-xs font-bold tracking-widest uppercase mb-4 text-pink-500">Followers: {followers.toLocaleString()}</label>
+                  <input type="range" min="1000" max="1000000" step="1000" value={followers} onChange={(e) => setFollowers(parseInt(e.target.value))} className="w-full accent-pink-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold tracking-widest uppercase mb-4 text-cyan-400">Monthly Price: ${subPrice}</label>
+                  <input type="range" min="1" max="100" step="1" value={subPrice} onChange={(e) => setSubPrice(parseInt(e.target.value))} className="w-full accent-cyan-400" />
+                </div>
+              </div>
+            </div>
+            <div className="bg-white/5 rounded-[2rem] p-10 text-center border border-white/10 backdrop-blur-md">
+              <p className="text-xs font-bold tracking-[0.3em] uppercase mb-2 text-zinc-500">Estimated Revenue</p>
+              <h3 className="text-6xl md:text-8xl font-black italic text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-cyan-400">
+                ${estimatedEarnings.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              </h3>
+              <p className="text-xs text-zinc-500 mt-4 italic">* Based on 5% subscriber conversion and 12% platform/processing fee.</p>
+              <Link href="https://onlycrave.com/signup" className="inline-block mt-8 bg-pink-600 hover:bg-pink-700 px-8 py-4 rounded-xl font-black italic uppercase tracking-widest transition-all">Start Earning</Link>
+            </div>
           </div>
+        </section>
 
-          <section>
-            <h2>Optimized for the Global Creator Economy</h2>
-            <p>
-              Whether you are searching for fitness influencers, digital artists, or lifestyle vloggers, OnlyCrave offers a decentralized yet secure experience. 
-              By leveraging blockchain-ready payment systems and localized mobile money like M-Pesa, we ensure that fans can support creators from anywhere in the world without the traditional barriers of banking.
-            </p>
-          </section>
+        {/* --- COMPARISON TABLE --- */}
+        <section className="mb-32">
+            <h2 className="text-center text-4xl font-black italic uppercase mb-12">The Creator Revolution</h2>
+            <div className="overflow-x-auto">
+                <table className="w-full text-left border-collapse bg-zinc-900/30 rounded-[2rem] overflow-hidden">
+                    <thead>
+                        <tr className="bg-white/5">
+                            <th className="p-6 font-black italic uppercase">Feature</th>
+                            <th className="p-6 font-black italic uppercase text-pink-500">OnlyCrave</th>
+                            <th className="p-6 font-black italic uppercase opacity-40">Others (OF/Fansly)</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        <tr>
+                            <td className="p-6 font-bold uppercase text-xs">Platform Fee</td>
+                            <td className="p-6 font-black text-green-500">5% - 12%</td>
+                            <td className="p-6 opacity-40">20%</td>
+                        </tr>
+                        <tr>
+                            <td className="p-6 font-bold uppercase text-xs">Payment Methods</td>
+                            <td className="p-6 text-cyan-400 font-bold">M-Pesa, Crypto, PayPal, Cards</td>
+                            <td className="p-6 opacity-40">Credit Cards Only</td>
+                        </tr>
+                        <tr>
+                            <td className="p-6 font-bold uppercase text-xs">Privacy</td>
+                            <td className="p-6">Geofencing & Discreet Billing</td>
+                            <td className="p-6 opacity-40">Standard</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
-          <div className="faq-section">
-            <h2>Search & Discovery FAQ</h2>
-            <details>
-              <summary>How can I rank as a creator on this search engine?</summary>
-              <p>Search ranking is determined by profile completeness, verification status, and engagement. Ensure your OnlyCrave profile is fully updated to appear at the top of our directory.</p>
-            </details>
-            <details>
-              <summary>Is the search anonymous?</summary>
-              <p>Yes. Browsing our directory is completely anonymous. We do not track individual search queries to ensure the total privacy of our fan community.</p>
-            </details>
+        {/* --- FAQ SECTION --- */}
+        <section className="grid md:grid-cols-2 gap-12 mb-32">
+          <div>
+            <h3 className="text-2xl font-black italic uppercase text-pink-500 mb-6">For Creators</h3>
+            <div className="space-y-4">
+              <details className="group bg-white/5 p-4 rounded-xl border border-white/5 cursor-pointer">
+                <summary className="font-bold list-none flex justify-between uppercase text-xs tracking-widest">How much do I keep? <span className="text-pink-500">+</span></summary>
+                <p className="pt-4 text-zinc-400 text-sm leading-relaxed">OnlyCrave takes an industry-low flat fee. You earn up to 95% on subscriptions, tips, and PPV. We believe creators should keep their profits.</p>
+              </details>
+              <details className="group bg-white/5 p-4 rounded-xl border border-white/5 cursor-pointer">
+                <summary className="font-bold list-none flex justify-between uppercase text-xs tracking-widest">Payout Methods? <span className="text-pink-500">+</span></summary>
+                <p className="pt-4 text-zinc-400 text-sm leading-relaxed">Withdraw via Bank Transfer, Mobile Money (M-Pesa), or Crypto (BTC/USDT). Processed in 3-5 business days.</p>
+              </details>
+            </div>
           </div>
-        </article>
+          <div>
+            <h3 className="text-2xl font-black italic uppercase text-cyan-400 mb-6">For Fans</h3>
+            <div className="space-y-4">
+              <details className="group bg-white/5 p-4 rounded-xl border border-white/5 cursor-pointer">
+                <summary className="font-bold list-none flex justify-between uppercase text-xs tracking-widest">Is my data safe? <span className="text-cyan-400">+</span></summary>
+                <p className="pt-4 text-zinc-400 text-sm leading-relaxed">We use 256-bit SSL encryption and PCI-compliant gateways. We never store your full card details.</p>
+              </details>
+              <details className="group bg-white/5 p-4 rounded-xl border border-white/5 cursor-pointer">
+                <summary className="font-bold list-none flex justify-between uppercase text-xs tracking-widest">Discreet Billing? <span className="text-cyan-400">+</span></summary>
+                <p className="pt-4 text-zinc-400 text-sm leading-relaxed">Transactions appear under neutral names. For 100% anonymity, use Cryptocurrency.</p>
+              </details>
+            </div>
+          </div>
+        </section>
       </main>
 
-      <style jsx>{`
-        .logo-3d {
-          font-size: 2.2rem; font-weight: 900; letter-spacing: -2px;
-          perspective: 1000px;
-        }
-        .logo-only { color: ${theme.primary}; text-shadow: 2px 2px 0px #000, 4px 4px 15px ${theme.primary}66; }
-        .logo-crave { color: ${theme.secondary}; text-shadow: 2px 2px 0px #000, 4px 4px 15px ${theme.secondary}66; margin-left: 2px; }
+      {/* --- FUTURISTIC FOOTER --- */}
+      <footer className="bg-zinc-950 border-t border-white/5 pt-20 pb-10 px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-12 mb-20">
+          <div className="col-span-2 md:col-span-1">
+            <div className="text-2xl font-black italic uppercase mb-6">OnlyCrave</div>
+            <p className="text-zinc-500 text-sm leading-relaxed">The global creator revolution. Empowering icons since day one.</p>
+          </div>
+          <div>
+            <h4 className="font-black italic uppercase text-[10px] tracking-[0.3em] mb-6 text-zinc-400">Legal</h4>
+            <ul className="space-y-4 text-sm text-zinc-500">
+              <li><Link href="https://onlycrave.com/p/policy" className="hover:text-white transition">Privacy Policy</Link></li>
+              <li><Link href="https://onlycrave.com/p/terms" className="hover:text-white transition">Terms of Service</Link></li>
+              <li><Link href="https://onlycrave.com/p/refund" className="hover:text-white transition">Refunds</Link></li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-black italic uppercase text-[10px] tracking-[0.3em] mb-6 text-zinc-400">Categories</h4>
+            <ul className="space-y-4 text-sm text-zinc-500 uppercase font-bold text-[10px]">
+              <li>Fitness & Wellness</li>
+              <li>AI & Synthetic</li>
+              <li>Music & ASMR</li>
+              <li>Kink & Alternative</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-black italic uppercase text-[10px] tracking-[0.3em] mb-6 text-zinc-400">Links</h4>
+            <ul className="space-y-4 text-sm text-zinc-500">
+              <li><Link href="https://onlycrave.com/blog" className="hover:text-white transition">Blog</Link></li>
+              <li><Link href="https://onlycrave.com/contact" className="hover:text-white transition">Contact Us</Link></li>
+              <li><Link href="https://onlycrave.com/affiliate" className="hover:text-white transition">Affiliate Program</Link></li>
+            </ul>
+          </div>
+        </div>
+        <div className="text-center text-zinc-700 text-[10px] font-black tracking-widest uppercase">
+          © {new Date().getFullYear()} OnlyCrave. All Rights Reserved.
+        </div>
+      </footer>
 
-        .search-pill-container {
-          max-width: 600px; margin: 0 auto; padding: 0 10px;
+      <style jsx global>{`
+        input[type='range'] {
+          -webkit-appearance: none;
+          background: rgba(255,255,255,0.1);
+          height: 4px;
+          border-radius: 2px;
         }
-        .search-input {
-          width: 100%; padding: 22px 35px; border-radius: 60px;
-          border: 1px solid ${theme.border}; background: ${theme.glass};
-          color: ${theme.text}; font-size: 1.1rem; outline: none;
-          box-shadow: 0 10px 40px rgba(0,0,0,0.1); transition: 0.4s;
-          backdrop-filter: blur(10px);
+        input[type='range']::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          height: 20px;
+          width: 20px;
+          border-radius: 50%;
+          background: #ec4899;
+          cursor: pointer;
+          box-shadow: 0 0 10px rgba(236,72,153,0.5);
         }
-        .search-input:focus { border-color: ${theme.primary}; transform: scale(1.02); }
-
-        .creator-card {
-          background: ${theme.card}; border-radius: 35px; padding: 30px;
-          text-align: center; border: 1px solid ${theme.border};
-          transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .creator-card:hover { transform: translateY(-12px); border-color: ${theme.secondary}; }
-        
-        .avatar-wrapper {
-          width: 120px; height: 120px; margin: 0 auto 15px;
-          padding: 4px; border-radius: 50%;
-          background: linear-gradient(45deg, ${theme.primary}, ${theme.secondary});
-        }
-        .creator-img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; background: #000; }
-
-        .pill-btn-3d {
-          width: 100%; padding: 16px; border-radius: 50px; border: none;
-          background: linear-gradient(135deg, ${theme.accent}, #000);
-          color: white; font-weight: 800; cursor: pointer;
-          box-shadow: 0 6px 0px #000, 0 12px 20px rgba(0,0,0,0.2);
-          transition: 0.1s; position: relative;
-        }
-        .pill-btn-3d:active { transform: translateY(4px); box-shadow: 0 2px 0px #000; }
-        .pill-btn-3d.loading { background: ${theme.primary}; opacity: 0.8; cursor: wait; }
-
-        .seo-article { margin-top: 100px; padding: 40px; background: ${theme.card}; border-radius: 40px; line-height: 1.8; }
-        .comparison-table-wrapper { margin: 40px 0; overflow-x: auto; }
-        .comparison-table { width: 100%; border-collapse: collapse; min-width: 500px; }
-        .comparison-table th { background: ${theme.primary}; color: white; padding: 15px; text-align: left; }
-        .comparison-table td { padding: 15px; border-bottom: 1px solid ${theme.border}; }
-
-        .faq-section { margin-top: 40px; }
-        details { background: rgba(0,0,0,0.1); padding: 20px; border-radius: 20px; margin-bottom: 10px; cursor: pointer; }
-        summary { font-weight: 700; }
-
-        @media (max-width: 768px) {
-          .logo-3d { font-size: 1.8rem; }
-          .seo-article { padding: 20px; }
-        }
+        details > summary { list-style: none; }
+        details > summary::-webkit-details-marker { display: none; }
       `}</style>
     </div>
   );
