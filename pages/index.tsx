@@ -18,9 +18,9 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
   const [mounted, setMounted] = useState(false)
   const [isFansnub, setIsFansnub] = useState(false)
 
-  /* ----------------------------- */
-  /* FANSNUB STATE (404 MIGRATION) */
-  /* ----------------------------- */
+  /* ===============================
+     FANSNUB STATE
+  =============================== */
   const [timer, setTimer] = useState(5)
   const [timeReady, setTimeReady] = useState(false)
   const [captchaReady, setCaptchaReady] = useState(false)
@@ -31,9 +31,9 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
   const [age, setAge] = useState('')
   const [ageError, setAgeError] = useState(false)
 
-  /* ----------------------------- */
-  /* ONLYCRAVE STATE               */
-  /* ----------------------------- */
+  /* ===============================
+     ONLYCRAVE STATE
+  =============================== */
   const [searchTerm, setSearchTerm] = useState('')
   const [loadingCreator, setLoadingCreator] = useState('')
   const [themeMode, setThemeMode] = useState<'dark' | 'light' | 'system'>('system')
@@ -44,6 +44,7 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
   useEffect(() => {
     setMounted(true)
     const host = window.location.hostname
+
     if (host.includes('fansnub.com')) {
       setIsFansnub(true)
 
@@ -71,18 +72,22 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
 
   useEffect(() => {
     if (!mounted || isFansnub) return
+
     if (themeMode === 'system') {
       const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches
       setResolvedTheme(isDark ? 'dark' : 'light')
-    } else setResolvedTheme(themeMode)
+    } else {
+      setResolvedTheme(themeMode)
+    }
+
     localStorage.setItem('crave-theme', themeMode)
   }, [themeMode, mounted, isFansnub])
 
   if (!mounted) return null
 
-  /* ========================================================= */
-  /* =================== FANSNUB LANDING ===================== */
-  /* ========================================================= */
+  /* =========================================================
+     ================= FANSNUB LANDING =======================
+  ========================================================= */
   if (isFansnub) {
     const newUrl = `https://onlycrave.com${router.asPath}`
 
@@ -106,24 +111,42 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
           <meta property="og:image" content="https://onlycrave.com/public/img/logo.png" />
         </Head>
 
-        <div style={{ background: '#050505', minHeight: '100vh', color: '#fff', padding: '20px' }}>
+        <div style={{ background: '#050505', minHeight: '100vh', color: '#fff', padding: 20, fontFamily: 'Inter, sans-serif' }}>
           <div style={{ maxWidth: 600, margin: '40px auto' }}>
-            
+
             {stage === 1 && (
-              <div className="card active">
+              <div style={{
+                background: '#111',
+                padding: 40,
+                borderRadius: 28,
+                border: '1px solid #222',
+                boxShadow: '0 20px 50px rgba(0,0,0,0.6)'
+              }}>
                 <div style={{ fontFamily: 'monospace', marginBottom: 20 }}>
                   {timeReady
                     ? 'SECURE TUNNEL ESTABLISHED. SELECT ANSWER.'
                     : `ESTABLISHING SECURE TUNNEL... (${timer}s)`}
                 </div>
 
-                <h1>Fansnub ➔ OnlyCrave</h1>
-                <p style={{ opacity: 0.6 }}>404: The page has moved to our new platform.</p>
+                <h1 style={{ fontSize: '1.8rem', marginBottom: 12 }}>
+                  Fansnub <span style={{ color: '#ff3e80' }}>➔</span> OnlyCrave
+                </h1>
 
-                <div style={{ background: '#000', padding: 20, borderRadius: 18, marginTop: 20 }}>
+                <p style={{ opacity: 0.6 }}>
+                  404: The page has moved to our new platform.
+                </p>
+
+                <div style={{
+                  background: '#000',
+                  padding: 20,
+                  borderRadius: 18,
+                  marginTop: 20,
+                  border: '1px solid #0102FD'
+                }}>
                   <div style={{ marginBottom: 10 }}>
-                    Security Check: {answer - 3 + 3} = ?
+                    Security Check: {answer - 2} + 2 = ?
                   </div>
+
                   {choices.map(c => (
                     <button
                       key={c}
@@ -137,7 +160,8 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
                         background: selected === c ? '#0102FD' : '#1a1a1a',
                         border: '1px solid #333',
                         color: '#fff',
-                        borderRadius: 8
+                        borderRadius: 8,
+                        cursor: 'pointer'
                       }}
                     >
                       {c}
@@ -155,7 +179,8 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
                     borderRadius: 14,
                     background: timeReady && captchaReady ? '#ff3e80' : '#333',
                     color: '#fff',
-                    border: 'none'
+                    border: 'none',
+                    cursor: 'pointer'
                   }}
                 >
                   Continue to Age Gate
@@ -164,9 +189,16 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
             )}
 
             {stage === 2 && (
-              <div className="card active">
+              <div style={{
+                background: '#111',
+                padding: 40,
+                borderRadius: 28,
+                border: '1px solid #ff3e80'
+              }}>
                 <h1>18+ Mature Access</h1>
-                <p style={{ opacity: 0.6 }}>OnlyCrave contains adult content.</p>
+                <p style={{ opacity: 0.6 }}>
+                  OnlyCrave contains adult content. Please confirm your eligibility.
+                </p>
 
                 <input
                   type="number"
@@ -180,7 +212,8 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
                     borderRadius: 10,
                     width: 80,
                     textAlign: 'center',
-                    marginTop: 20
+                    marginTop: 20,
+                    color: '#fff'
                   }}
                 />
 
@@ -203,22 +236,24 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
                     background: '#ff3e80',
                     color: '#fff',
                     borderRadius: 14,
-                    border: 'none'
+                    border: 'none',
+                    cursor: 'pointer'
                   }}
                 >
                   Confirm & Enter OnlyCrave
                 </button>
               </div>
             )}
+
           </div>
         </div>
       </>
     )
   }
 
-  /* ========================================================= */
-  /* ==================== ONLYCRAVE SITE ====================== */
-  /* ========================================================= */
+  /* =========================================================
+     ================= ONLYCRAVE FULL UI =====================
+  ========================================================= */
 
   const t = {
     bg: resolvedTheme === 'dark' ? '#050505' : '#f8f9fa',
@@ -242,44 +277,67 @@ export default function CombinedHome({ creators }: { creators: any[] }) {
   }
 
   return (
-    <div style={{ background: t.bg, color: t.text, minHeight: '100vh' }}>
+    <div style={{ backgroundColor: t.bg, color: t.text, minHeight: '100vh', fontFamily: '"Inter", sans-serif' }}>
       <Head>
         <title>OnlyCrave | The World's Most Profitable Creator Platform</title>
-        <meta
-          name="description"
-          content="Join OnlyCrave and keep 95% of your earnings. Optimized for M-Pesa, Crypto, and global creators."
-        />
+        <meta name="description" content="Join OnlyCrave and keep 95% of your earnings. Optimized for M-Pesa, Crypto, and global creators." />
         <link rel="canonical" href="https://onlycrave.com" />
       </Head>
 
-      {/* Full original OnlyCrave UI remains exactly as your second file */}
-      {/* (Grid, Hero, Calculator, SEO content, etc.) */}
-
       <main style={{ maxWidth: 1200, margin: '0 auto', padding: 80 }}>
-        <h1>EARN MORE. CRAVE FREEDOM.</h1>
+        <h1 style={{ fontSize: '4rem', fontWeight: 900 }}>
+          EARN <span style={{ color: t.pink }}>MORE</span>.<br />
+          CRAVE <span style={{ color: t.cyan }}>FREEDOM</span>.
+        </h1>
 
         <input
+          style={{
+            marginTop: 30,
+            padding: 20,
+            width: '100%',
+            borderRadius: 30,
+            border: `1px solid ${t.border}`,
+            background: t.card,
+            color: t.text
+          }}
           placeholder="Discover verified creators..."
           onChange={e => setSearchTerm(e.target.value)}
         />
 
-        <div>
+        <section style={{ marginTop: 60 }}>
           {filteredCreators.slice(0, 8).map(c => (
-            <div key={c.username}>
+            <div key={c.username} style={{
+              background: t.card,
+              border: `1px solid ${t.border}`,
+              padding: 30,
+              borderRadius: 30,
+              marginBottom: 20
+            }}>
               <h3>{c.name}</h3>
-              <button onClick={() => handleAction(c.username)}>
-                {loadingCreator === c.username
-                  ? 'AUTHENTICATING...'
-                  : 'VIEW EXCLUSIVE CONTENT'}
+              <p style={{ color: t.pink }}>@{c.username}</p>
+              <button
+                onClick={() => handleAction(c.username)}
+                style={{
+                  marginTop: 10,
+                  padding: 15,
+                  borderRadius: 20,
+                  border: 'none',
+                  background: t.text,
+                  color: t.bg,
+                  cursor: 'pointer'
+                }}
+              >
+                {loadingCreator === c.username ? 'AUTHENTICATING...' : 'VIEW EXCLUSIVE CONTENT'}
               </button>
             </div>
           ))}
-        </div>
+        </section>
 
-        <div>
-          <h2>95% Rule</h2>
-          <p>${estimatedEarnings.toLocaleString()}</p>
-        </div>
+        <section style={{ marginTop: 80 }}>
+          <h2>The 95% Rule.</h2>
+          <p style={{ opacity: 0.6 }}>We only take a 5% fee.</p>
+          <h3 style={{ color: t.cyan }}>${estimatedEarnings.toLocaleString()}</h3>
+        </section>
       </main>
     </div>
   )
