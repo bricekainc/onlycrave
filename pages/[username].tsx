@@ -15,206 +15,186 @@ export async function getServerSideProps(context: any) {
 
 export default function CreatorProfile({ creator }: { creator: any }) {
   const router = useRouter();
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [isFansnub, setIsFansnub] = useState(false);
+  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
   const [showAgeGate, setShowAgeGate] = useState(false);
 
   useEffect(() => {
-    // Sync with system theme or default to light mode as per user preference
-    const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    setIsDarkMode(systemPrefersDark);
+    setMounted(true);
+    const host = window.location.hostname;
+    if (host.includes('fansnub.com')) {
+      setIsFansnub(true);
+    }
+
+    // Detect theme from localStorage (synced with index.tsx)
+    const savedTheme = localStorage.getItem('crave-theme');
+    if (savedTheme === 'light') {
+      setResolvedTheme('light');
+    } else if (savedTheme === 'dark') {
+      setResolvedTheme('dark');
+    } else {
+      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      setResolvedTheme(systemDark ? 'dark' : 'light');
+    }
   }, []);
 
   const theme = {
-    bg: isDarkMode ? '#0a0a0c' : '#ffffff',
-    card: isDarkMode ? '#16161a' : '#f8f9fa',
-    text: isDarkMode ? '#ffffff' : '#1a1a1b',
-    primary: '#e33cc7', // OnlyCrave Pink
-    secondary: '#2ddfff', // OnlyCrave Cyan
+    bg: isFansnub ? '#050505' : (resolvedTheme === 'dark' ? '#0a0a0c' : '#ffffff'),
+    card: isFansnub ? '#111111' : (resolvedTheme === 'dark' ? '#16161a' : '#f8f9fa'),
+    text: isFansnub ? '#ffffff' : (resolvedTheme === 'dark' ? '#ffffff' : '#1a1a1b'),
+    primary: '#e33cc7', 
+    secondary: '#2ddfff', 
     blue: '#0102FD',
-    border: isDarkMode ? '#222' : '#eaeaea',
-    muted: isDarkMode ? '#888' : '#666',
-  };
-
-  // SEO Optimized Meta & FAQ Schema
-  const pageTitle = `${creator.name} (@${creator.username}) | Official OnlyCrave Profile`;
-  const seoDescription = `Access ${creator.name}'s exclusive content on OnlyCrave. Support @${creator.username} using M-Pesa, PayPal, or Crypto. Join the official community today.`;
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": `How can I subscribe to ${creator.name}?`,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": `You can subscribe to ${creator.name} on OnlyCrave using PayPal, Credit/Debit Cards, or M-Pesa. Simply log in and click the subscribe button.`
-        }
-      },
-      {
-        "@type": "Question",
-        "name": `Does OnlyCrave accept M-Pesa for ${creator.name}?`,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Yes, OnlyCrave supports M-Pesa. You can pay directly at checkout or top up your wallet using M-Pesa."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": "Is my payment anonymous?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "OnlyCrave offers various secure and private payment methods including Crypto (Coinbase/CoinPayments) for enhanced privacy."
-        }
-      }
-    ]
+    border: isFansnub ? '#333' : (resolvedTheme === 'dark' ? '#222' : '#eaeaea'),
+    muted: isFansnub ? '#666' : (resolvedTheme === 'dark' ? '#888' : '#666'),
   };
 
   const handleAgeVerify = (isOfAge: boolean) => {
     if (isOfAge) {
       window.location.href = creator.link;
     } else {
-      window.location.href = "https://briceka.com/onlycrave";
+      window.location.href = "https://onlycrave.com";
     }
   };
 
+  if (!mounted) return <div style={{ background: '#0a0a0c', minHeight: '100vh' }} />;
+
   return (
-    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', fontFamily: "'Inter', system-ui, sans-serif", transition: '0.3s' }}>
+    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', fontFamily: "'Inter', sans-serif", transition: '0.3s' }}>
       <Head>
-        <title>{pageTitle}</title>
-        <meta name="description" content={seoDescription} />
-        <meta name="keywords" content={`${creator.name}, ${creator.username}, OnlyCrave, Mpesa, PayPal, Subscription, Exclusive Content`} />
-        <link rel="icon" href="https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico" />
-        
-        {/* Open Graph */}
-        <meta property="og:title" content={pageTitle} />
-        <meta property="og:description" content={seoDescription} />
+        <title>{creator.name} (@{creator.username}) | {isFansnub ? 'Fansnub Archive' : 'OnlyCrave Profile'}</title>
+        <meta name="description" content={`Access ${creator.name}'s exclusive content. Fansnub has merged with OnlyCrave.`} />
         <meta property="og:image" content={creator.avatar} />
-        <meta property="og:type" content="profile" />
-        <meta name="twitter:card" content="summary_large_image" />
-        
-        {/* Structured Data */}
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
+      {/* --- FANSNUB DOMAIN WARNING --- */}
+      {isFansnub && (
+        <div style={{ background: theme.blue, color: '#fff', padding: '15px', textAlign: 'center', fontSize: '0.9rem', fontWeight: 800, borderBottom: `4px solid ${theme.primary}` }}>
+          ⚠️ SECURITY NOTICE: Fansnub.com has moved to OnlyCrave. All subscriptions for {creator.name} are active.
+        </div>
+      )}
+
       <main style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px' }}>
+        
         {/* Navigation */}
         <nav style={{ marginBottom: '40px' }}>
           <button 
             onClick={() => router.push('/')} 
-            style={{ background: 'none', border: 'none', color: theme.primary, cursor: 'pointer', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1rem' }}
+            style={{ background: 'none', border: 'none', color: theme.secondary, cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', fontSize: '0.8rem' }}
           >
-            ← Back to Directory
+            ← BACK TO {isFansnub ? 'FANSNUB' : 'DIRECTORY'}
           </button>
         </nav>
 
         {/* Profile Header */}
-        <header style={{ textAlign: 'center', marginBottom: '60px' }}>
+        <header style={{ textAlign: 'center', marginBottom: '60px', position: 'relative' }}>
           <div style={{ position: 'relative', display: 'inline-block' }}>
             <img 
               src={creator.avatar} 
-              alt={`${creator.name} profile`} 
-              style={{ width: 'clamp(120px, 20vw, 180px)', height: 'clamp(120px, 20vw, 180px)', borderRadius: '50%', objectFit: 'cover', border: `4px solid ${theme.primary}`, boxShadow: `0 15px 35px ${theme.primary}44` }} 
+              alt={creator.name} 
+              style={{ 
+                width: '160px', height: '160px', borderRadius: '50%', objectFit: 'cover', 
+                border: `4px solid ${isFansnub ? theme.blue : theme.primary}`,
+                filter: isFansnub ? 'grayscale(0.5) blur(2px)' : 'none', // Preview feel for Fansnub
+                boxShadow: `0 20px 40px ${isFansnub ? '#000' : theme.primary + '33'}`
+              }} 
             />
-            <div title="Verified Creator" style={{ position: 'absolute', bottom: '10px', right: '10px', backgroundColor: theme.secondary, color: '#000', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: `3px solid ${theme.bg}` }}>✓</div>
+            {isFansnub && (
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, textShadow: '0 2px 10px #000', fontSize: '0.7rem' }}>
+                MOVED TO ONLYCRAVE
+              </div>
+            )}
+            <div style={{ position: 'absolute', bottom: '10px', right: '10px', backgroundColor: theme.secondary, color: '#000', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: `3px solid ${theme.bg}` }}>✓</div>
           </div>
-          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 3.2rem)', fontWeight: '900', marginTop: '25px', marginBottom: '8px', letterSpacing: '-0.02em' }}>{creator.name}</h1>
-          <p style={{ color: theme.primary, fontSize: '1.25rem', fontWeight: '600' }}>@{creator.username}</p>
+          <h1 style={{ fontSize: '2.8rem', fontWeight: '950', marginTop: '25px', marginBottom: '5px', letterSpacing: '-1px' }}>{creator.name}</h1>
+          <p style={{ color: theme.primary, fontSize: '1.2rem', fontWeight: '700' }}>@{creator.username}</p>
         </header>
 
         {/* Bio Section */}
-        <section style={{ backgroundColor: theme.card, padding: 'clamp(20px, 5vw, 40px)', borderRadius: '24px', border: `1px solid ${theme.border}`, marginBottom: '30px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-          <h2 style={{ fontSize: '1.4rem', marginBottom: '16px', color: theme.secondary, textTransform: 'uppercase', letterSpacing: '1px' }}>Creator Bio</h2>
-          <p style={{ lineHeight: '1.8', opacity: 0.9, fontSize: '1.1rem' }}>{creator.description}</p>
+        <section style={{ backgroundColor: theme.card, padding: '30px', borderRadius: '24px', border: `1px solid ${theme.border}`, marginBottom: '30px', filter: isFansnub ? 'blur(4px)' : 'none' }}>
+          <h2 style={{ fontSize: '1rem', marginBottom: '12px', color: theme.secondary, textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 900 }}>Profile Bio</h2>
+          <p style={{ lineHeight: '1.8', opacity: 0.8 }}>{creator.description}</p>
         </section>
 
-        {/* Payment & CTA Card */}
-        <section style={{ backgroundColor: theme.card, padding: 'clamp(20px, 5vw, 40px)', borderRadius: '24px', border: `2px solid ${theme.blue}`, position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px 16px', background: theme.blue, color: '#fff', fontSize: '0.75rem', fontWeight: 'bold', borderBottomLeftRadius: '16px' }}>SECURE GATEWAY</div>
+        {/* CTA CARD */}
+        <section style={{ 
+          backgroundColor: isFansnub ? '#000' : theme.card, 
+          padding: '40px', 
+          borderRadius: '30px', 
+          border: `2px solid ${isFansnub ? theme.primary : theme.blue}`, 
+          position: 'relative', 
+          overflow: 'hidden',
+          boxShadow: isFansnub ? `0 0 40px ${theme.primary}22` : 'none'
+        }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px 20px', background: isFansnub ? theme.primary : theme.blue, color: '#fff', fontSize: '0.7rem', fontWeight: 900, borderBottomLeftRadius: '20px' }}>
+            {isFansnub ? 'MIGRATED PROFILE' : 'ENCRYPTED CONNECTION'}
+          </div>
           
-          <h2 style={{ fontSize: '1.6rem', marginBottom: '24px' }}>How to Support {creator.name}</h2>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '20px' }}>
+            {isFansnub ? 'Access fansnub contents here' : `Join ${creator.name}'s Inner Circle`}
+          </h2>
           
-          <div style={{ display: 'grid', gap: '24px', marginBottom: '32px' }}>
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-              <span style={{ background: theme.primary, color: '#fff', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0, fontWeight: 'bold' }}>1</span>
-              <p style={{ margin: 0 }}><strong>Instant Access:</strong> Pay via <strong>M-Pesa, PayPal, or Credit Card</strong> directly on the profile checkout.</p>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '16px', alignItems: 'flex-start' }}>
-              <span style={{ background: theme.primary, color: '#fff', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', flexShrink: 0, fontWeight: 'bold' }}>2</span>
-              <p style={{ margin: 0 }}><strong>Wallet Top-up:</strong> Load your <a href="https://onlycrave.com/my/wallet" style={{ color: theme.secondary, fontWeight: '600' }}>OnlyCrave Wallet</a> using <strong>Crypto (BTC/ETH), Atlos, or Bank Transfer</strong>.</p>
-            </div>
+          <div style={{ display: 'grid', gap: '20px', marginBottom: '30px' }}>
+             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <div style={{ width: '10px', height: '10px', background: theme.primary, borderRadius: '50%' }} />
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>Direct support via <strong>M-Pesa, PayPal, & Crypto</strong></p>
+             </div>
+             <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                <div style={{ width: '10px', height: '10px', background: theme.secondary, borderRadius: '50%' }} />
+                <p style={{ margin: 0, fontSize: '0.95rem' }}>Immediate access to high-res media library</p>
+             </div>
           </div>
 
           <button 
             onClick={() => setShowAgeGate(true)}
-            style={{ width: '100%', padding: '22px', borderRadius: '16px', border: 'none', background: `linear-gradient(135deg, ${theme.blue} 0%, ${theme.primary} 100%)`, color: '#fff', fontWeight: '800', fontSize: '1.2rem', cursor: 'pointer', transition: 'transform 0.2s', boxShadow: '0 10px 25px rgba(227, 60, 199, 0.3)' }}
-            onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.02)'}
-            onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            style={{ 
+              width: '100%', padding: '24px', borderRadius: '20px', border: 'none', 
+              background: `linear-gradient(135deg, ${theme.blue} 0%, ${theme.primary} 100%)`, 
+              color: '#fff', fontWeight: '900', fontSize: '1.3rem', cursor: 'pointer', 
+              transition: 'transform 0.2s', boxShadow: '0 15px 30px rgba(1, 2, 253, 0.3)' 
+            }}
           >
-            Unlock {creator.name}'s Content
+            {isFansnub ? 'PROCEED TO ONLYCRAVE' : 'UNLOCK FULL ACCESS'}
           </button>
         </section>
 
-        {/* Enhanced FAQ Section for SEO */}
-        <section style={{ marginTop: '60px' }}>
-          <h3 style={{ fontSize: '1.8rem', marginBottom: '20px', textAlign: 'center' }}>Frequently Asked Questions</h3>
-          
-          {[
-            { q: `Is this the official page for ${creator.name}?`, a: `Yes, this is the verified directory page for ${creator.name} on OnlyCrave.` },
-            { q: `How do I use M-Pesa on OnlyCrave?`, a: "Select the 'M-Pesa' option at checkout. You will receive an STK push on your phone to enter your PIN and complete the transaction safely." },
-            { q: "Will 'OnlyCrave' show up on my bank statement?", a: "To ensure your privacy, we use discreet billing descriptors. Check your wallet settings for more details." },
-            { q: "Can I cancel my subscription anytime?", a: "Yes, you have full control over your subscriptions and can cancel at any time from your account dashboard." }
-          ].map((item, idx) => (
-            <details key={idx} style={{ padding: '20px 0', borderBottom: `1px solid ${theme.border}`, cursor: 'pointer' }}>
-              <summary style={{ fontWeight: '600', fontSize: '1.1rem', listStyle: 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                {item.q}
-                <span style={{ color: theme.primary }}>+</span>
-              </summary>
-              <p style={{ paddingTop: '15px', color: theme.muted, lineHeight: '1.6' }}>{item.a}</p>
-            </details>
-          ))}
-        </section>
+        {/* FAQ Section */}
+        {!isFansnub && (
+          <section style={{ marginTop: '60px' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '30px', textAlign: 'center' }}>Member Support</h3>
+            {[
+              { q: `Is this the official OnlyCrave page for ${creator.name}?`, a: `Confirmed. This is the verified index for ${creator.name}. All payments are handled via OnlyCrave's secure 256-bit gateway.` },
+              { q: "Can I pay using M-Pesa?", a: "Yes. Choose M-Pesa at the secure checkout. You will receive an instant push notification on your registered mobile number." }
+            ].map((item, idx) => (
+              <details key={idx} style={{ padding: '20px 0', borderBottom: `1px solid ${theme.border}` }}>
+                <summary style={{ fontWeight: '800', cursor: 'pointer', listStyle: 'none', display: 'flex', justifyContent: 'space-between' }}>
+                  {item.q} <span style={{ color: theme.primary }}>+</span>
+                </summary>
+                <p style={{ paddingTop: '15px', color: theme.muted, fontSize: '0.9rem' }}>{item.a}</p>
+              </details>
+            ))}
+          </section>
+        )}
       </main>
 
       {/* --- AGE VERIFICATION MODAL --- */}
       {showAgeGate && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
-          <div style={{ backgroundColor: theme.card, padding: '40px', borderRadius: '32px', maxWidth: '450px', width: '100%', textAlign: 'center', border: `2px solid ${theme.primary}`, boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
-            <div style={{ fontSize: '3rem', marginBottom: '20px' }}>🔞</div>
-            <h2 style={{ color: theme.primary, fontSize: '1.8rem', marginBottom: '10px' }}>Age Verification</h2>
-            <p style={{ marginBottom: '30px', opacity: 0.8, fontSize: '1.1rem' }}>This profile contains adult content. Are you 18 years of age or older?</p>
-            
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(15px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
+          <div style={{ backgroundColor: theme.card, padding: '40px', borderRadius: '32px', maxWidth: '450px', width: '100%', textAlign: 'center', border: `2px solid ${theme.primary}` }}>
+            <h2 style={{ color: theme.primary, fontSize: '2rem', fontWeight: 900 }}>AGE GATE</h2>
+            <p style={{ margin: '20px 0 40px', opacity: 0.8 }}>Verify you are 18+ to access {creator.name}'s private vault.</p>
             <div style={{ display: 'flex', gap: '15px' }}>
-              <button 
-                onClick={() => handleAgeVerify(false)} 
-                style={{ flex: 1, padding: '18px', borderRadius: '14px', border: `1px solid ${theme.border}`, backgroundColor: 'transparent', color: theme.text, cursor: 'pointer', fontWeight: '600' }}
-              >
-                No, I am under 18
-              </button>
-              <button 
-                onClick={() => handleAgeVerify(true)} 
-                style={{ flex: 1, padding: '18px', borderRadius: '14px', border: 'none', background: theme.primary, color: '#fff', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem' }}
-              >
-                Yes, I am 18+
-              </button>
+              <button onClick={() => handleAgeVerify(false)} style={{ flex: 1, padding: '20px', borderRadius: '15px', background: 'transparent', border: `1px solid ${theme.border}`, color: theme.text, fontWeight: '700' }}>EXIT</button>
+              <button onClick={() => handleAgeVerify(true)} style={{ flex: 1, padding: '20px', borderRadius: '15px', background: theme.primary, border: 'none', color: '#fff', fontWeight: '900' }}>I AM 18+</button>
             </div>
-            <p style={{ marginTop: '20px', fontSize: '0.8rem', opacity: 0.5 }}>By clicking "Yes", you agree to our Terms of Service.</p>
           </div>
         </div>
       )}
 
-      {/* Footer SEO Text */}
-      <footer style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.6, fontSize: '0.9rem' }}>
-        <p>© {new Date().getFullYear()} OnlyCrave Directory • Verified Profile of {creator.name}</p>
+      <footer style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.4, fontSize: '0.7rem', fontWeight: 800, letterSpacing: '2px' }}>
+        ONLYCRAVE DIRECTORY // {isFansnub ? 'FANSNUB MIRROR' : 'VERIFIED ECOSYSTEM'} // {new Date().getFullYear()}
       </footer>
-
-      <style jsx global>{`
-        body { margin: 0; padding: 0; }
-        details > summary::-webkit-details-marker { display: none; }
-        a { text-decoration: none; transition: 0.2s; }
-        a:hover { opacity: 0.8; }
-      `}</style>
     </div>
   );
 }
