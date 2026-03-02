@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import { getCreators } from '../lib/getCreators';
@@ -6,8 +6,7 @@ import { getCreators } from '../lib/getCreators';
 export async function getServerSideProps() {
   try {
     const creators = await getCreators();
-    // Logic: Sort by a 'rank' or 'followers' field if available, 
-    // or just pass them as a list to be ranked by index.
+    // Return all creators; we will handle the "Random 5" on the client to avoid hydration flicker
     return { props: { creators: creators || [] } };
   } catch (error) {
     return { props: { creators: [] } };
@@ -15,44 +14,69 @@ export async function getServerSideProps() {
 }
 
 export default function Explore({ creators }: { creators: any[] }) {
+  const [displayCreators, setDisplayCreators] = useState<any[]>([]);
   const [category, setCategory] = useState('All');
+  const [mounted, setMounted] = useState(false);
 
-  const categories = [
-    "All", "Trending", "Fitness", "Lifestyle", "Gaming", "Music", "AI & Digital"
-  ];
+  useEffect(() => {
+    setMounted(true);
+    // Logic: Shuffle and pick 5 creators randomly every time the page loads
+    const shuffled = [...creators].sort(() => 0.5 - Math.random());
+    setDisplayCreators(shuffled.slice(0, 5));
+  }, [creators]);
+
+  const theme = {
+    bg: '#020202',
+    cyan: '#2ddfff',
+    pink: '#e33cc7',
+    glass: 'rgba(255, 255, 255, 0.03)',
+    border: 'rgba(255, 255, 255, 0.08)',
+  };
+
+  const categories = ["All", "Trending", "Fitness", "Lifestyle", "Gaming", "Music", "AI"];
+
+  if (!mounted) return <div style={{ background: theme.bg, minHeight: '100vh' }} />;
 
   return (
-    <div className="min-h-screen bg-[#020202] text-white font-sans selection:bg-cyan-500/30">
+    <div style={{ backgroundColor: theme.bg, color: '#fff', minHeight: '100vh', fontFamily: '"Inter", sans-serif' }}>
       <Head>
-        <title>Top OnlyCrave Creators | Official 2026 Rankings</title>
-        <meta name="description" content="Discover the top 100 verified OnlyCrave creators. Filter by category, engagement, and region. The official directory for the creator economy." />
-        <meta name="keywords" content="Top OnlyCrave creators, best OnlyFans alternatives, trending influencers 2026, verified content creators" />
+        <title>Explore Top Creators | OnlyCrave Leaderboard</title>
+        <meta name="description" content="Discover the top 5 trending OnlyCrave creators. Verified rankings updated hourly." />
       </Head>
 
-      {/* --- LEADERBOARD HEADER --- */}
-      <section className="pt-20 pb-12 px-6 border-b border-white/5 bg-gradient-to-b from-zinc-900/20 to-transparent">
-        <div className="max-w-7xl mx-auto text-center">
-          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter mb-4">
-            Creator <span className="text-cyan-400">Leaderboard</span>
-          </h1>
-          <p className="text-zinc-500 max-w-xl mx-auto text-sm font-bold tracking-widest uppercase italic">
-            Rankings updated every 60 minutes based on engagement & verification.
-          </p>
-        </div>
+      {/* --- GLOW DECORATION --- */}
+      <div style={{ position: 'fixed', top: 0, right: 0, width: '300px', height: '300px', background: `${theme.cyan}15`, filter: 'blur(100px)', pointerEvents: 'none' }} />
+
+      {/* --- HEADER --- */}
+      <section style={{ paddingTop: '80px', paddingBottom: '40px', textAlign: 'center', borderBottom: `1px solid ${theme.border}` }}>
+        <h1 style={{ fontSize: 'clamp(2rem, 6vw, 4rem)', fontWeight: 900, textTransform: 'uppercase', fontStyle: 'italic', letterSpacing: '-2px', margin: 0 }}>
+          CREATOR <span style={{ color: theme.cyan }}>LEADERBOARD</span>
+        </h1>
+        <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#666', letterSpacing: '3px', marginTop: '10px', textTransform: 'uppercase' }}>
+          RANKINGS UPDATED EVERY 60 MINUTES // SECURE ECOSYSTEM
+        </p>
       </section>
 
-      {/* --- FILTER BAR --- */}
-      <div className="sticky top-0 z-40 bg-black/80 backdrop-blur-md border-b border-white/5 py-4 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-6 flex gap-4">
+      {/* --- CATEGORIES --- */}
+      <div style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(2,2,2,0.8)', backdropFilter: 'blur(20px)', borderBottom: `1px solid ${theme.border}`, padding: '15px 0' }}>
+        <div style={{ maxWidth: '1000px', margin: '0 auto', display: 'flex', gap: '10px', overflowX: 'auto', padding: '0 20px', scrollbarWidth: 'none' }}>
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}
-              className={`px-6 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap border ${
-                category === cat 
-                ? "bg-cyan-500 border-cyan-500 text-black shadow-[0_0_15px_rgba(34,211,238,0.4)]" 
-                : "bg-transparent border-white/10 text-zinc-500 hover:border-white/40"
-              }`}
+              style={{
+                padding: '8px 20px',
+                borderRadius: '50px',
+                border: category === cat ? `1px solid ${theme.cyan}` : `1px solid ${theme.border}`,
+                background: category === cat ? theme.cyan : 'transparent',
+                color: category === cat ? '#000' : '#888',
+                fontSize: '0.65rem',
+                fontWeight: 900,
+                textTransform: 'uppercase',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap',
+                transition: '0.3s'
+              }}
             >
               {cat}
             </button>
@@ -60,103 +84,89 @@ export default function Explore({ creators }: { creators: any[] }) {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto px-6 py-12">
-        <div className="space-y-4">
-          {creators.map((c, index) => (
-            <Link key={c.username} href={`/${c.username}`}>
-              <div className="group relative bg-zinc-900/20 border border-white/5 hover:border-cyan-500/50 p-4 md:p-6 rounded-2xl flex items-center gap-4 md:gap-8 transition-all hover:translate-x-2">
+      <main style={{ maxWidth: '900px', margin: '0 auto', padding: '40px 20px' }}>
+        {/* --- DYNAMIC LIST --- */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {displayCreators.map((c, index) => (
+            <Link key={c.username} href={`/${c.username}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div className="leaderboard-item">
                 
-                {/* RANK NUMBER */}
-                <div className="w-10 md:w-16 flex-shrink-0 text-center">
-                  <span className={`text-2xl md:text-4xl font-black italic ${
-                    index === 0 ? "text-yellow-400 drop-shadow-md" : 
-                    index === 1 ? "text-zinc-400" : 
-                    index === 2 ? "text-orange-400" : "text-zinc-700"
-                  }`}>
-                    #{index + 1}
-                  </span>
+                {/* RANK */}
+                <div style={{ width: '50px', fontSize: '1.5rem', fontWeight: 900, fontStyle: 'italic', color: index === 0 ? '#FFD700' : index === 1 ? '#C0C0C0' : index === 2 ? '#CD7F32' : '#333' }}>
+                  #{index + 1}
                 </div>
 
                 {/* AVATAR */}
-                <div className="relative">
-                  <img 
-                    src={c.avatar} 
-                    alt={c.name} 
-                    className="w-14 h-14 md:w-20 md:h-20 rounded-full object-cover border-2 border-white/10 group-hover:border-cyan-400 transition-colors"
-                  />
-                  {index < 3 && (
-                    <div className="absolute -top-1 -right-1 bg-cyan-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded italic">
-                      PRO
-                    </div>
-                  )}
+                <div style={{ position: 'relative' }}>
+                  <img src={c.avatar} style={{ width: '60px', height: '60px', borderRadius: '15px', objectFit: 'cover', border: `1px solid ${theme.border}` }} />
+                  {index === 0 && <div style={{ position: 'absolute', top: '-5px', right: '-5px', background: theme.cyan, color: '#000', fontSize: '0.5rem', fontWeight: 900, padding: '2px 5px', borderRadius: '4px' }}>TOP</div>}
                 </div>
 
                 {/* INFO */}
-                <div className="flex-grow">
-                  <h2 className="text-lg md:text-xl font-black uppercase italic tracking-tighter group-hover:text-cyan-400 transition-colors">
-                    {c.name}
-                  </h2>
-                  <div className="flex items-center gap-3">
-                    <span className="text-pink-500 text-[10px] font-black uppercase tracking-widest">@{c.username}</span>
-                    <span className="hidden md:inline h-1 w-1 bg-zinc-700 rounded-full"></span>
-                    <span className="hidden md:inline text-zinc-500 text-[10px] font-bold uppercase tracking-tighter italic">Verified Global Artist</span>
-                  </div>
+                <div style={{ flexGrow: 1, paddingLeft: '10px' }}>
+                  <h2 style={{ fontSize: '1.1rem', fontWeight: 800, margin: 0, textTransform: 'uppercase', letterSpacing: '-0.5px' }}>{c.name}</h2>
+                  <span style={{ color: theme.pink, fontSize: '0.7rem', fontWeight: 700 }}>@{c.username}</span>
                 </div>
 
-                {/* STATS/ACTION */}
-                <div className="hidden md:flex flex-col items-end gap-1">
-                  <div className="text-[10px] font-black tracking-widest text-zinc-600 uppercase italic">Status</div>
-                  <div className="flex items-center gap-2">
-                    <span className="h-2 w-2 bg-green-500 rounded-full animate-pulse"></span>
-                    <span className="text-xs font-black italic uppercase">Online</span>
-                  </div>
+                {/* STATUS */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} className="hide-mobile">
+                  <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 10px #10b981' }} />
+                  <span style={{ fontSize: '0.6rem', fontWeight: 900, textTransform: 'uppercase', color: '#444' }}>Live Now</span>
                 </div>
 
-                <div className="ml-auto">
-                   <div className="bg-white/5 group-hover:bg-cyan-500 group-hover:text-black p-3 rounded-xl transition-all">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="9 5l7 7-7 7" />
-                      </svg>
-                   </div>
+                {/* ACTION */}
+                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '10px', borderRadius: '12px' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                    <path d="M9 5l7 7-7 7" />
+                  </svg>
                 </div>
-
-                {/* PROGRESS BAR DECORATION */}
-                <div className="absolute bottom-0 left-[10%] right-[10%] h-[1px] bg-gradient-to-r from-transparent via-white/5 to-transparent"></div>
               </div>
             </Link>
           ))}
         </div>
 
-        {/* --- SEO FOOTER ARTICLE --- */}
-        <article className="mt-32 p-10 bg-zinc-900/40 rounded-[3rem] border border-white/5">
-          <h2 className="text-3xl font-black italic uppercase mb-6 tracking-tighter">How Our Ranking System Works</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <section>
-              <h3 className="text-cyan-400 font-black uppercase text-xs tracking-[.2em] mb-4 underline decoration-2 underline-offset-4">Verification Score</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">
-                Creators with completed KYC and the blue checkmark receive priority indexing. This ensures fans always find legitimate, secure profiles.
-              </p>
-            </section>
-            <section>
-              <h3 className="text-pink-500 font-black uppercase text-xs tracking-[.2em] mb-4 underline decoration-2 underline-offset-4">Engagement Rate</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">
-                Our algorithm tracks daily interaction levels, subscription growth, and tip frequency to surface the fastest-growing influencers.
-              </p>
-            </section>
-            <section>
-              <h3 className="text-white font-black uppercase text-xs tracking-[.2em] mb-4 underline decoration-2 underline-offset-4">Local Impact</h3>
-              <p className="text-zinc-500 text-sm leading-relaxed">
-                Special weighting is given to creators utilizing local payment methods like M-Pesa, making them more accessible to regional fanbases.
-              </p>
-            </section>
+        {/* --- SEO ARTICLE --- */}
+        <article style={{ marginTop: '80px', padding: '40px', background: theme.glass, borderRadius: '30px', border: `1px solid ${theme.border}` }}>
+          <h2 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '20px', fontStyle: 'italic' }}>HOW OUR RANKING WORKS</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '30px' }}>
+            <div>
+              <h4 style={{ color: theme.cyan, fontSize: '0.7rem', fontWeight: 900, marginBottom: '10px' }}>VERIFICATION SCORE</h4>
+              <p style={{ fontSize: '0.8rem', color: '#666', lineHeight: 1.6 }}>Creators with completed KYC and blue checkmarks receive priority indexing for fan safety.</p>
+            </div>
+            <div>
+              <h4 style={{ color: theme.pink, fontSize: '0.7rem', fontWeight: 900, marginBottom: '10px' }}>LOCAL IMPACT</h4>
+              <p style={{ fontSize: '0.8rem', color: '#666', lineHeight: 1.6 }}>Weighting is given to creators using regional payment methods like M-Pesa or Crypto.</p>
+            </div>
           </div>
         </article>
       </main>
 
-      {/* --- MINI FOOTER --- */}
-      <footer className="py-20 text-center opacity-30 text-[10px] font-black tracking-[0.5em] uppercase italic">
-        OnlyCrave Official Index // {new Date().getFullYear()} // Secure Ecosystem
+      <footer style={{ padding: '60px 20px', textAlign: 'center', opacity: 0.2, fontSize: '0.6rem', fontWeight: 900, letterSpacing: '5px' }}>
+        ONLYCRAVE OFFICIAL INDEX // {new Date().getFullYear()}
       </footer>
+
+      <style jsx>{`
+        .leaderboard-item {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          padding: 20px;
+          background: ${theme.glass};
+          border: 1px solid ${theme.border};
+          border-radius: 24px;
+          transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          cursor: pointer;
+        }
+        .leaderboard-item:hover {
+          background: rgba(255, 255, 255, 0.07);
+          border-color: ${theme.cyan};
+          transform: translateX(10px);
+        }
+        @media (max-width: 600px) {
+          .hide-mobile { display: none; }
+          .leaderboard-item { gap: 10px; padding: 15px; }
+        }
+      `}</style>
     </div>
   );
 }
