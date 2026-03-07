@@ -97,7 +97,7 @@ export default function CreatorProfile({ creator }: any) {
   return (
     <div style={{ backgroundColor: '#050505', color: '#fff', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '20px' }}>
       <Head>
-        <title>{creator.name} - Profile | OnlyCrave</title>
+        <title>{creator.name} - Profile | OnlyCrave | Coomer.st | Coomer.su | OnlyFans leaks | Fansly Leaks | Patreon Leaks | Kemono.cr party</title>
         <meta name="description" content={`Official 2026 profile for ${creator.name} on OnlyCrave.`} />
       </Head>
 
