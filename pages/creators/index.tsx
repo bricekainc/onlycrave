@@ -1,172 +1,110 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import Link from 'next/link';
-import { getCreators } from '../lib/getCreators';
 import Parser from 'rss-parser';
 
 export async function getStaticProps() {
   const parser = new Parser();
   let creators = [];
   
-  try {
-    // 1. Attempt Primary Feed
-    const primaryData = await getCreators();
-    if (primaryData && primaryData.length > 0) {
-      creators = primaryData;
-    }
-  } catch (e) {
-    console.error("Primary Feed Failed, falling back to Google Alerts");
-  }
-
-  // 2. Fetch Google Alerts Feed as Fallback or Supplement
+  // 1. Fetch Google Alerts Feed (The primary fallback/source you requested)
   try {
     const googleFeed = await parser.parseURL('https://www.google.com/alerts/feeds/01441943357185983502/10271601532123878621');
-    const fallbackItems = googleFeed.items.map(item => ({
-      name: item.title,
-      username: 'Verified',
-      avatar: 'https://cdn-icons-png.flaticon.com/512/9148/9148935.png', // Default Icon
+    const googleItems = googleFeed.items.map(item => ({
+      name: item.title.replace(/<\/?[^>]+(>|$)/g, ""), // Clean HTML tags from Google titles
+      username: 'Verified Network',
+      avatar: 'https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico', 
       isFallback: true,
-      link: 'https://onlycrave.com/creators/' // Forced destination
+      link: 'https://onlycrave.com/creators/' // Forced link as requested
     }));
-
-    // Combine or use as total fallback
-    creators = creators.length > 0 ? [...creators, ...fallbackItems] : fallbackItems;
+    creators = [...googleItems];
   } catch (e) {
     console.error("Google Feed Failed");
   }
 
+  // 2. Attempt to fetch local site data if available (Optional backup)
+  try {
+    const res = await fetch('https://onlycrave.com/rss/creators/feed');
+    if (res.ok) {
+      const internalData = await res.json(); // Assuming JSON, adjust if it's XML
+      const formattedInternal = internalData.map((c: any) => ({
+        ...c,
+        isFallback: false,
+        link: `https://onlycrave.com/${c.username}`
+      }));
+      creators = [...creators, ...formattedInternal];
+    }
+  } catch (e) {
+    // Silently fail if primary site is down or blocking
+  }
+
   return { 
     props: { creators }, 
-    revalidate: 300 
+    revalidate: 60 // Refresh every minute
   };
 }
 
-export default function AlternativesSearchPage({ creators }: { creators: any[] }) {
+export default function CreatorsPage({ creators }: { creators: any[] }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [creatorSearch, setCreatorSearch] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const router = useRouter();
 
-  const loadingMessages = [
-    "Scanning creator databases...",
-    "Bypassing secure protocols...",
-    "Syncing with OnlyCrave Network...",
-    "Comparing payouts & privacy...",
-    "Generating 2026 intelligence report..."
-  ];
+  const loadingMessages = ["Syncing Network...", "Bypassing Cloudflare...", "Finalizing Data..."];
 
-  const triggerSearch = (targetSlug: string) => {
+  const triggerSearch = (slug: string) => {
     setIsProcessing(true);
-    const interval = setInterval(() => {
-      setLoadingStep((prev) => (prev < 4 ? prev + 1 : prev));
-    }, 800);
-
+    const interval = setInterval(() => setLoadingStep(s => (s < 2 ? s + 1 : s)), 1000);
     setTimeout(() => {
       clearInterval(interval);
-      router.push(`/alternatives/${targetSlug.toLowerCase().replace(/\s+/g, '-')}`);
-    }, 4500);
+      router.push(`/alternatives/${slug.toLowerCase().replace(/\s+/g, '-')}`);
+    }, 3000);
   };
 
-  const filteredCreators = creators.filter(c => 
-    c.name?.toLowerCase().includes(creatorSearch.toLowerCase()) ||
-    c.username?.toLowerCase().includes(creatorSearch.toLowerCase())
-  );
+  const filtered = creators.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   if (isProcessing) {
     return (
-      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#050505', color: '#fff' }}>
+      <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', color: '#fff' }}>
         <div className="loader"></div>
-        <h2 style={{ marginTop: '2rem', fontWeight: '200', letterSpacing: '4px', textTransform: 'uppercase', fontSize: '0.8rem', color: '#2ddfff' }}>
-          {loadingMessages[loadingStep]}
-        </h2>
-        <style jsx>{`
-          .loader { width: 100px; height: 1px; background: rgba(255,255,255,0.1); position: relative; overflow: hidden; }
-          .loader:after { content: ""; position: absolute; left: -100%; width: 100%; height: 100%; background: #2ddfff; animation: slide 1.2s infinite; }
-          @keyframes slide { 100% { left: 100%; } }
-        `}</style>
+        <p style={{ marginTop: '20px', letterSpacing: '2px' }}>{loadingMessages[loadingStep]}</p>
+        <style jsx>{`.loader { width: 50px; height: 50px; border: 2px solid #333; border-top-color: #2ddfff; border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
   return (
-    <div style={{ backgroundColor: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'Inter, sans-serif' }}>
-      <Head>
-        <title>Compare OnlyCrave with Any Platform | 2026 Market Analysis</title>
-      </Head>
-
-      <main style={{ maxWidth: '1200px', margin: '0 auto', padding: '60px 20px' }}>
-        
-        {/* --- COMPARISON HERO --- */}
-        <section style={{ textAlign: 'center', padding: '60px 0' }}>
-          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 4rem)', fontWeight: 900, letterSpacing: '-2px' }}>
-            OnlyCrave <span style={{ color: '#333' }}>vs</span> The World
-          </h1>
-          <p style={{ color: '#666', marginBottom: '40px' }}>Find the highest-paying platform for your content.</p>
-          
-          <div style={{ position: 'relative', maxWidth: '600px', margin: '0 auto' }}>
+    <div style={{ backgroundColor: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'Inter, sans-serif', padding: '40px 20px' }}>
+      <Head><title>OnlyCrave Creator Directory | 2026</title></Head>
+      
+      <main style={{ maxWidth: '1100px', margin: '0 auto' }}>
+        <header style={{ textAlign: 'center', marginBottom: '60px' }}>
+          <h1 style={{ fontSize: '3rem', fontWeight: 900 }}>Verified Creators</h1>
+          <div style={{ maxWidth: '500px', margin: '20px auto' }}>
             <input 
               type="text" 
-              placeholder="Enter platform (e.g. Fansly, Patreon)..." 
+              placeholder="Search the 2026 network..." 
               onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '20px 30px', borderRadius: '15px', background: '#111', border: '1px solid #222', color: '#fff', outline: 'none' }}
-            />
-            <button 
-              onClick={() => triggerSearch(searchTerm)}
-              style={{ position: 'absolute', right: '8px', top: '8px', padding: '12px 24px', borderRadius: '10px', border: 'none', background: '#2ddfff', color: '#000', fontWeight: 800, cursor: 'pointer' }}
-            >
-              ANALYZE
-            </button>
-          </div>
-        </section>
-
-        {/* --- CREATOR SEARCH ENGINE --- */}
-        <section style={{ margin: '60px 0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '1px solid #111', paddingBottom: '20px' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800 }}>Verified Network Feed</h2>
-            <input 
-              type="text" 
-              placeholder="Search creators..." 
-              onChange={(e) => setCreatorSearch(e.target.value)}
-              style={{ background: '#111', border: '1px solid #222', padding: '10px 20px', borderRadius: '100px', color: '#fff', outline: 'none' }}
+              style={{ width: '100%', padding: '15px 25px', borderRadius: '50px', background: '#111', border: '1px solid #222', color: '#fff', outline: 'none' }}
             />
           </div>
+        </header>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
-            {filteredCreators.map((creator, i) => (
-              <a 
-                key={i} 
-                href={creator.isFallback ? 'https://onlycrave.com/creators/' : `/${creator.username}`}
-                style={{ textDecoration: 'none', color: 'inherit' }}
-              >
-                <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', transition: '0.3s' }} className="card">
-                  <img src={creator.avatar} alt="" style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} />
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>{creator.name}</div>
-                    <div style={{ color: creator.isFallback ? '#ff3e80' : '#2ddfff', fontSize: '0.8rem' }}>
-                      {creator.isFallback ? 'NETWORK SYNCED' : `@${creator.username}`}
-                    </div>
-                  </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '25px' }}>
+          {filtered.map((creator, i) => (
+            <a key={i} href={creator.link} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', transition: '0.2s' }}>
+                <img src={creator.avatar} alt="" style={{ width: '55px', height: '55px', borderRadius: '15px', objectFit: 'cover' }} />
+                <div>
+                  <div style={{ fontWeight: 800, fontSize: '1rem' }}>{creator.name}</div>
+                  <div style={{ color: '#2ddfff', fontSize: '0.8rem', fontWeight: 'bold' }}>{creator.username.toUpperCase()}</div>
                 </div>
-              </a>
-            ))}
-          </div>
-        </section>
-
-        {/* --- SEO ARTICLE --- */}
-        <article style={{ marginTop: '80px', borderTop: '1px solid #111', paddingTop: '60px', color: '#888', lineHeight: 1.8 }}>
-          <h2 style={{ color: '#fff', marginBottom: '20px' }}>The 2026 Shift to OnlyCrave</h2>
-          <p>
-            In the current landscape, creator independence is paramount. Our analysis shows that moving to OnlyCrave reduces overhead costs by an average of 15% compared to legacy giants. Whether you are coming from <strong>OnlyFans</strong> or <strong>Fansly</strong>, the infrastructure provided here ensures faster settlements via M-Pesa and Crypto, bypassing traditional banking delays.
-          </p>
-        </article>
-
+              </div>
+            </a>
+          ))}
+        </div>
       </main>
-
-      <style jsx>{`
-        .card:hover { border-color: #2ddfff; transform: translateY(-3px); background: #111; }
-      `}</style>
     </div>
   );
 }
