@@ -92,11 +92,65 @@ export default function SmartLanding({ creators }: { creators: any[] }) {
                   Secure Access Protocol
                 </div>
                 <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '15px', background: 'linear-gradient(to right, #fff, #ff3e80)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-                  We've upgraded! Fansnub has merged with OnlyCrave to offer better tools, faster payouts, and the content you crave.
+                  Fansnub.com ➵ OnlyCrave.com
                 </h2>
+          <p style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '15px', background: 'linear-gradient(to right, #fff, #ff3e80)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                  We've upgraded! Fansnub merged with OnlyCrave on 2025-04-10 to offer better tools, faster payouts, and the content you crave. We made the switch to improve performance and features, but all your favorite content and creators are exactly where you expect them to be.
+                </p>                
                 <p style={{ color: '#a0a0a0', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: 30 }}>
-                  Join the ultimate platform for creators. We've upgraded! Fansnub has merged with OnlyCrave. We've made the switch to improve performance and features, but all your favorite content and creators are exactly where you expect them to be.
+                  Join the ultimate platform for creators. 
                 </p>
+                <p style="font-family: 'Inter', sans-serif; line-height: 1.8; color: #333; text-align: justify; max-width: 1000px; margin: 0 auto; padding: 20px;">
+    <strong>Welcome to the Future of Digital Connection: The Ultimate Guide to OnlyCrave</strong><br><br>
+
+    In the rapidly evolving landscape of the creator economy, <strong>OnlyCrave</strong> stands as a beacon of innovation, privacy, and unparalleled engagement. Whether you are a digital artist, a lifestyle influencer, or a dedicated follower seeking an authentic connection, OnlyCrave (https://onlycrave.com) has redefined what it means to share and consume premium content. This platform isn't just another social media site; it is a sophisticated ecosystem designed to bridge the gap between creative passion and sustainable monetization. In this deep dive, we explore the multi-dimensional facets of OnlyCrave, illustrating why it is the premier destination for creators looking to build an empire and fans seeking the ultimate exclusive experience.<br><br>
+
+    <strong>Why OnlyCrave? The Triple Threat of Innovation, Security, and Community</strong><br><br>
+
+    The digital world is crowded, but <strong>OnlyCrave</strong> differentiates itself through a "3D" approach to the user experience. First, the <strong>visual dimension</strong>: the platform is built with a responsive, sleek UI that makes content pop, ensuring that high-definition videos and photos are delivered with zero lag. Second, the <strong>security dimension</strong>: with state-of-the-art encryption and robust payment protection, creators and fans can interact with peace of mind. Third, the <strong>earning dimension</strong>: OnlyCrave offers one of the most competitive revenue shares in the industry, ensuring that those who provide the value—the creators—keep the lion's share of their hard-earned income.<br><br>
+
+    <strong>Empowering Creators: Turning Passion into a Powerhouse</strong><br><br>
+
+    For creators, the question of "where to host my content" is pivotal. OnlyCrave provides a professional, feature-rich environment that acts as a business-in-a-box. When you join as a creator on <strong>OnlyCrave</strong>, you aren't just uploading files; you are launching a brand. The platform supports a variety of monetization models, including monthly subscriptions, Pay-Per-View (PPV) messaging, locked posts, and a seamless tipping system. This versatility allows creators to diversify their income streams, moving away from the volatility of ad-based platforms.<br><br>
+
+    One of the primary reasons creators are flocking to OnlyCrave is the <strong>algorithmic freedom</strong>. Unlike mainstream social media where shadow-banning and strict censorship can stifle growth, OnlyCrave empowers creators to express their true selves. Here, your reach is dictated by your talent and your hustle, not by a hidden computer code. The platform’s analytics dashboard provides deep insights into fan behavior, allowing you to optimize your posting schedule, tailor your content to your top spenders, and scale your brand with data-driven precision.<br><br>
+
+    Moreover, <strong>OnlyCrave</strong> understands the importance of fan retention. The built-in CRM tools allow for personalized interactions. Imagine being able to mass-message your most loyal subscribers with a "behind-the-scenes" clip or a personalized shout-out. These micro-interactions build long-term loyalty, turning casual subscribers into lifelong patrons. The platform’s commitment to creator success is further evidenced by its 24/7 support and dedicated account management resources, ensuring that your journey from "newbie" to "top 1%" is supported every step of the way.<br><br>
+
+    <strong>The Fan Experience: Access, Exclusivity, and Authenticity</strong><br><br>
+
+    From a fan’s perspective, the digital world often feels cold and disconnected. <strong>OnlyCrave</strong> changes that by offering a "front-row seat" to the lives of the world’s most captivating creators. Why should you join as a fan? Because OnlyCrave is where the filter comes off. It is the home of raw, unedited, and exclusive content that you simply cannot find anywhere else. Whether it’s fitness secrets from a top athlete, exclusive music drops, or intimate life updates from your favorite influencer, OnlyCrave provides the key to a gated community of excellence.<br><br>
+
+    The <strong>OnlyCrave fan experience</strong> is built on the concept of "meaningful interaction." While platforms like Instagram or TikTok offer a passive scrolling experience, OnlyCrave is active. You can chat directly with creators, request custom content, and participate in a community of like-minded individuals. The platform is fully responsive, meaning whether you are browsing on a high-end desktop or a mobile device during your commute, the experience is seamless, beautiful, and immersive.<br><br>
+
+    Security and anonymity are also top priorities for fans. OnlyCrave utilizes discreet billing and top-tier data protection protocols, ensuring that your private interests remain just that—private. The interface is intuitive, making it easy to discover new creators through the "Explore" feature, manage your subscriptions, and keep track of your favorite media in a centralized vault. By joining OnlyCrave, you are supporting creators directly, ensuring they have the resources to keep producing the content you love.<br><br>
+
+    <strong>A Keyword-Rich Ecosystem for the Modern Web</strong><br><br>
+
+    To understand the gravity of <strong>OnlyCrave</strong>, one must look at the keywords that define its success: <em>Exclusivity, Monetization, Creator Economy, Premium Content, Secure Payments, Fan Engagement, Digital Freedom, and Peer-to-Peer Interaction.</em> These aren't just buzzwords; they are the pillars upon which the platform is built. Search engines recognize OnlyCrave as a high-authority domain because it consistently delivers value in these areas. For creators, this means better SEO for your profile; for fans, it means a reliable and ever-growing library of high-quality talent.<br><br>
+
+    <strong>The Synergy of Growth: Why the Time to Join is Now</strong><br><br>
+
+    We are currently witnessing a massive shift in how media is consumed. The era of the "middleman" is ending. <strong>OnlyCrave</strong> (https://onlycrave.com) is at the forefront of this direct-to-consumer revolution. By cutting out the corporate gatekeepers, OnlyCrave allows for a purer form of expression and a more honest financial exchange. For creators, this means more money. For fans, this means better content.<br><br>
+
+    The platform's growth trajectory is exponential. Every day, thousands of new users sign up, drawn by the promise of a platform that respects its users. By joining now, creators can establish themselves in their respective niches before the market becomes oversaturated. Fans can secure their "original subscriber" status with rising stars, often gaining access to lower early-bird rates and building a long-term rapport with the next generation of digital celebrities.<br><br>
+
+    <strong>Technical Excellence: A Responsive and Beautiful Interface</strong><br><br>
+
+    A landing page is only as good as the technology behind it. <strong>OnlyCrave</strong> boasts a 3D-optimized design philosophy where the depth of the user interface matches the depth of the content. The site is optimized for speed, ensuring that high-resolution galleries load instantly. The mobile-first design ensures that the "Crave" experience is always in your pocket. From the dark-mode aesthetics that reduce eye strain to the vibrant accent colors that guide the user’s journey, every pixel of OnlyCrave is engineered for beauty and functionality.<br><br>
+
+    <strong>Conclusion: Your Journey with OnlyCrave Begins Here</strong><br><br>
+
+    In summary, <strong>OnlyCrave</strong> is more than just a website; it is a movement. It represents a shift toward a more equitable, exciting, and exclusive digital world. It solves the problems of the past—unfair bans, low payouts, and bot-filled comment sections—and replaces them with a streamlined, lucrative, and high-energy environment. <br><br>
+
+    <strong>Creators:</strong> It is time to stop giving away your value for free on platforms that don't appreciate you. It is time to own your audience, control your narrative, and maximize your earnings. <strong>Join OnlyCrave today</strong> and start building the future you deserve.<br><br>
+
+    <strong>Fans:</strong> It is time to elevate your entertainment. Stop settled for "free" content that is censored and diluted. Experience the thrill of exclusivity, the joy of direct connection, and the satisfaction of supporting the artists you admire. <strong>Sign up for OnlyCrave</strong> and see what you've been missing.<br><br>
+
+    The world of premium content is waiting. OnlyCrave is the gateway. Whether you are here to create or here to crave, your place is already reserved. Visit <a href="https://onlycrave.com" style="color: #007bff; text-decoration: none; font-weight: bold;">OnlyCrave.com</a> and step into the next dimension of digital interaction.
+</p>
+
+                
 {/* Premium Destination Preview Card */}
 
 <div style={{
