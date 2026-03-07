@@ -95,7 +95,7 @@ export default function SmartLanding({ creators }: { creators: any[] }) {
                 <h2 style={{ fontSize: '2.5rem', fontWeight: 800, marginBottom: '15px', background: 'linear-gradient(to right, #fff, #ff3e80)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   Fansnub.com ➵ OnlyCrave.com
                 </h2>
-          <p style={{ fontSize: '0.5rem', fontWeight: 300, marginBottom: '8px', background: 'linear-gradient(to right, #1900ff, #b300ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+          <p style={{ fontSize: '1.5rem', fontWeight: 300, marginBottom: '12px', background: 'linear-gradient(to right, #1900ff, #b300ff)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
                   We've upgraded! Fansnub merged with OnlyCrave on 2025-04-10 to offer better tools, faster payouts, and the content you crave. We made the switch to improve performance and features, but all your favorite content and creators are exactly where you expect them to be.
                 </p>                
                 <p style={{ color: '#a0a0a0', fontSize: '1.1rem', lineHeight: 1.6, marginBottom: 30 }}>
