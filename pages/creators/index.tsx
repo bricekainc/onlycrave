@@ -93,7 +93,7 @@ export default function CreatorsPage({ creators }: { creators: any[] }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '25px' }}>
           {filtered.map((creator, i) => (
-            <a key={i} href={creator.link} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
+            <a key={i} href={/creators/${creator.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
               <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', transition: '0.2s' }}>
                 <img src={creator.avatar} alt="" style={{ width: '55px', height: '55px', borderRadius: '15px', objectFit: 'cover' }} />
                 <div>
