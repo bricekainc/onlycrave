@@ -22,7 +22,7 @@
 <h2>Seamless Content Delivery</h2>
 <ul>
   <li><strong>Multi-Format Uploads:</strong> Photos, videos, audio, and private blog posts.</li>
-  <li><strong>Custom Branding:</strong> Personalize profiles with colors, banners, and themes (like <code>#0102FD</code>).</li>
+  <li><strong><a href="https://onlycrave.briceka.com/?branding/">Custom Branding</a>:</strong> Personalize profiles with colors, banners, and themes (like <code>#0102FD</code>).</li>
   <li><strong>Mobile-Optimized:</strong> Fully responsive for iOS, Android, and desktop browsers.</li>
 </ul>
 
