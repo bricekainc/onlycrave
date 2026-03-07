@@ -11,11 +11,13 @@ export async function getStaticProps() {
   // List of all Google Alert Feeds provided
   const googleFeeds = [
     'https://www.google.com/alerts/feeds/01441943357185983502/10271601532123878621',
+    'https://www.google.com/alerts/feeds/01441943357185983502/9761647876109762227',
     'https://www.google.com/alerts/feeds/01441943357185983502/13120870724569043521',
     'https://www.google.com/alerts/feeds/01441943357185983502/15721545087151547856',
     'https://www.google.com/alerts/feeds/01441943357185983502/4153531990675198701',
     'https://www.google.com/alerts/feeds/01441943357185983502/14140302812017746122',
     'https://www.google.com/alerts/feeds/01441943357185983502/7146660539207966665',
+    'https://www.google.com/alerts/feeds/01441943357185983502/12893446076237304652',
     'https://www.google.com/alerts/feeds/01441943357185983502/6907578491817998773',
     'https://www.google.com/alerts/feeds/01441943357185983502/7654207322957982057'
   ];
