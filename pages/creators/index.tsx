@@ -6,42 +6,66 @@ import Parser from 'rss-parser';
 
 export async function getStaticProps() {
   const parser = new Parser();
-  let creators = [];
-  
-  // 1. Fetch Google Alerts Feed (The primary fallback/source you requested)
-  try {
-    const googleFeed = await parser.parseURL('https://www.google.com/alerts/feeds/01441943357185983502/10271601532123878621');
-    const googleItems = googleFeed.items.map(item => ({
-      name: item.title.replace(/<\/?[^>]+(>|$)/g, ""), // Clean HTML tags from Google titles
-      username: 'Verified Network',
-      avatar: 'https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico', 
-      isFallback: true,
-      link: 'https://onlycrave.com/creators/' // Forced link as requested
-    }));
-    creators = [...googleItems];
-  } catch (e) {
-    console.error("Google Feed Failed");
-  }
+  let creators: any[] = [];
 
-  // 2. Attempt to fetch local site data if available (Optional backup)
+  // List of all Google Alert Feeds provided
+  const googleFeeds = [
+    'https://www.google.com/alerts/feeds/01441943357185983502/10271601532123878621',
+    'https://www.google.com/alerts/feeds/01441943357185983502/13120870724569043521',
+    'https://www.google.com/alerts/feeds/01441943357185983502/15721545087151547856',
+    'https://www.google.com/alerts/feeds/01441943357185983502/4153531990675198701',
+    'https://www.google.com/alerts/feeds/01441943357185983502/14140302812017746122',
+    'https://www.google.com/alerts/feeds/01441943357185983502/7146660539207966665',
+    'https://www.google.com/alerts/feeds/01441943357185983502/6907578491817998773',
+    'https://www.google.com/alerts/feeds/01441943357185983502/7654207322957982057'
+  ];
+
+  // 1. Fetch all Google Alerts in Parallel
+  const googleResults = await Promise.allSettled(
+    googleFeeds.map(url => parser.parseURL(url))
+  );
+
+  googleResults.forEach(result => {
+    if (result.status === 'fulfilled') {
+      const items = result.value.items.map(item => {
+        const cleanName = (item.title || 'Verified Creator').replace(/<\/?[^>]+(>|$)/g, "");
+        return {
+          name: cleanName,
+          // Generate SEO-friendly slug
+          slug: cleanName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+          username: 'Verified Network',
+          avatar: 'https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico',
+          isFallback: true
+        };
+      });
+      creators = [...creators, ...items];
+    }
+  });
+
+  // 2. Attempt to fetch internal site data
   try {
     const res = await fetch('https://onlycrave.com/rss/creators/feed');
     if (res.ok) {
-      const internalData = await res.json(); // Assuming JSON, adjust if it's XML
+      const internalData = await res.json();
       const formattedInternal = internalData.map((c: any) => ({
-        ...c,
-        isFallback: false,
-        link: `https://onlycrave.com/${c.username}`
+        name: c.name,
+        slug: c.username.toLowerCase(),
+        username: c.username,
+        avatar: c.avatar || 'https://raw.githubusercontent.com/bricekainc/onlycrave/main/lib/favicon.ico',
+        isFallback: false
       }));
       creators = [...creators, ...formattedInternal];
     }
   } catch (e) {
-    // Silently fail if primary site is down or blocking
+    console.error("Internal Feed Failed");
   }
 
-  return { 
-    props: { creators }, 
-    revalidate: 60 // Refresh every minute
+  // Remove duplicates based on slug
+  const uniqueCreators = Array.from(new Map(creators.map(item => [item.slug, item])).values());
+
+  return {
+    props: { creators: uniqueCreators },
+    revalidate: 60
   };
 }
 
@@ -53,16 +77,9 @@ export default function CreatorsPage({ creators }: { creators: any[] }) {
 
   const loadingMessages = ["Syncing Network...", "Bypassing Cloudflare...", "Finalizing Data..."];
 
-  const triggerSearch = (slug: string) => {
-    setIsProcessing(true);
-    const interval = setInterval(() => setLoadingStep(s => (s < 2 ? s + 1 : s)), 1000);
-    setTimeout(() => {
-      clearInterval(interval);
-      router.push(`/alternatives/${slug.toLowerCase().replace(/\s+/g, '-')}`);
-    }, 3000);
-  };
-
-  const filtered = creators.filter(c => c.name.toLowerCase().includes(searchTerm.toLowerCase()));
+  const filtered = creators.filter(c => 
+    c.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (isProcessing) {
     return (
@@ -76,15 +93,19 @@ export default function CreatorsPage({ creators }: { creators: any[] }) {
 
   return (
     <div style={{ backgroundColor: '#050505', color: '#fff', minHeight: '100vh', fontFamily: 'Inter, sans-serif', padding: '40px 20px' }}>
-      <Head><title>OnlyCrave Creator Directory | 2026</title></Head>
+      <Head>
+        <title>OnlyCrave Creator Directory | 2026 Network</title>
+        <meta name="description" content="Official directory of verified OnlyCrave creators." />
+      </Head>
       
       <main style={{ maxWidth: '1100px', margin: '0 auto' }}>
         <header style={{ textAlign: 'center', marginBottom: '60px' }}>
-          <h1 style={{ fontSize: '3rem', fontWeight: 900 }}>Verified Creators</h1>
+          <h1 style={{ fontSize: '3rem', fontWeight: 900, letterSpacing: '-1.5px' }}>Verified Creators</h1>
           <div style={{ maxWidth: '500px', margin: '20px auto' }}>
             <input 
               type="text" 
-              placeholder="Search the 2026 network..." 
+              placeholder="Search by name or keyword..." 
+              value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ width: '100%', padding: '15px 25px', borderRadius: '50px', background: '#111', border: '1px solid #222', color: '#fff', outline: 'none' }}
             />
@@ -93,17 +114,48 @@ export default function CreatorsPage({ creators }: { creators: any[] }) {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '25px' }}>
           {filtered.map((creator, i) => (
-            <a key={i} href={/creators/${creator.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit' }}>
-              <div style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: '20px', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '15px', transition: '0.2s' }}>
-                <img src={creator.avatar} alt="" style={{ width: '55px', height: '55px', borderRadius: '15px', objectFit: 'cover' }} />
+            <Link 
+              key={i} 
+              href={`/creators/${creator.slug}`} 
+              style={{ textDecoration: 'none', color: 'inherit' }}
+            >
+              <div style={{ 
+                background: '#0a0a0a', 
+                border: '1px solid #1a1a1a', 
+                padding: '20px', 
+                borderRadius: '24px', 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '15px', 
+                transition: 'all 0.3s ease',
+                cursor: 'pointer'
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = '#2ddfff';
+                e.currentTarget.style.transform = 'translateY(-5px)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = '#1a1a1a';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
+              >
+                <img src={creator.avatar} alt="" style={{ width: '55px', height: '55px', borderRadius: '14px', objectFit: 'cover' }} />
                 <div>
-                  <div style={{ fontWeight: 800, fontSize: '1rem' }}>{creator.name}</div>
-                  <div style={{ color: '#2ddfff', fontSize: '0.8rem', fontWeight: 'bold' }}>{creator.username.toUpperCase()}</div>
+                  <div style={{ fontWeight: 800, fontSize: '0.95rem', marginBottom: '4px' }}>{creator.name}</div>
+                  <div style={{ color: '#2ddfff', fontSize: '0.75rem', fontWeight: 'bold', letterSpacing: '1px' }}>
+                    VIEW PROFILE
+                  </div>
                 </div>
               </div>
-            </a>
+            </Link>
           ))}
         </div>
+
+        {filtered.length === 0 && (
+          <div style={{ textAlign: 'center', padding: '100px 0', color: '#444' }}>
+            No creators found matching "{searchTerm}"
+          </div>
+        )}
       </main>
     </div>
   );
