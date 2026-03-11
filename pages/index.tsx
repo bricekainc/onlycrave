@@ -125,8 +125,8 @@ export default function SmartLanding({ creators }: { creators: any[] }) {
     borderBottom: "1px solid #1a1a1a"
   }}>
     <img
-      src="https://briceka.com/digest/onlycrave/assets/oclogo-blue.png"
-      alt="OnlyCrave Logo"
+      src="https://dqy38fnwh4fqs.cloudfront.net/UHNN7MLEN7DKL692JPKKA7Q87PMD/projects/onlycrave6939fbaa-bcbb-4ef6-a0c4-f891d67b4ac5"
+      alt="OnlyCrave"
       style={{ maxWidth: "80%", maxHeight: 100, objectFit: "contain" }}
     />
   </div>
