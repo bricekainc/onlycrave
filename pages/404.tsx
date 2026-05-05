@@ -1,39 +1,45 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
 export default function Custom404() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
+  const [results, setResults] = useState<any[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Realistic futuristic theme colors
-  const theme = {
-    bg: resolvedTheme === 'dark' ? '#050507' : '#f8f9fa',
-    text: resolvedTheme === 'dark' ? '#ffffff' : '#1a1a1b',
-    primary: '#e33cc7', // Pink-Neon
-    secondary: '#2ddfff', // Cyan-Neon
-    accent: '#0102FD', // Deep Blue
-    card: resolvedTheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
-    border: resolvedTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+  // Styling Constants
+  const colors = {
+    bg: '#050505',
+    card: '#111111',
+    text: '#ffffff',
+    primary: '#e33cc7', // Pink
+    secondary: '#2ddfff', // Cyan
+    border: 'rgba(255,255,255,0.1)'
   };
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem('crave-theme');
-    if (savedTheme === 'light') {
-      setResolvedTheme('light');
-    } else {
-      const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setResolvedTheme(systemDark ? 'dark' : 'light');
-    }
   }, []);
 
-  // Live Search Logic - Redirects to OnlyCrave search with the query
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      window.location.href = `https://onlycrave.com/search?q=${encodeURIComponent(searchQuery)}`;
+  // Simulating the Live Feed Search
+  // In a real app, you'd fetch the RSS/JSON from the URLs provided.
+  // Here we filter the concept of those feeds.
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    if (query.length > 2) {
+      setIsSearching(true);
+      // This is where we simulate finding content from your feeds
+      // In production, this would be an API call to your backend/proxy
+      setTimeout(() => {
+        setResults([
+          { title: "Trending Content", link: "https://onlycrave.com/rss/", type: "Feed" },
+          { title: "Top Creators", link: "https://onlycrave.com/rss/creators/feed/", type: "Creator" },
+        ]);
+        setIsSearching(false);
+      }, 500);
+    } else {
+      setResults([]);
     }
   };
 
@@ -41,152 +47,151 @@ export default function Custom404() {
 
   return (
     <div style={{ 
-      backgroundColor: theme.bg, 
-      color: theme.text, 
+      backgroundColor: colors.bg, 
+      color: colors.text, 
       minHeight: '100vh', 
-      display: 'flex', 
+      fontFamily: "'Inter', sans-serif",
+      display: 'flex',
       flexDirection: 'column',
-      alignItems: 'center', 
-      justifyContent: 'center', 
-      fontFamily: "'Inter', system-ui, sans-serif",
-      textAlign: 'center',
-      padding: '20px',
-      overflowX: 'hidden',
-      position: 'relative'
+      alignItems: 'center',
+      padding: '40px 20px'
     }}>
       <Head>
-        <title>404 | Lost in the Multiverse</title>
+        <title>Lost? Let's find something better | OnlyCrave</title>
       </Head>
 
-      {/* Futuristic Background Elements */}
+      {/* --- BACKGROUND GLOW --- */}
       <div style={{
-        position: 'absolute',
-        width: '300px',
-        height: '300px',
-        background: `radial-gradient(circle, ${theme.primary}22 0%, transparent 70%)`,
-        top: '10%',
-        left: '10%',
-        zIndex: 0,
-        filter: 'blur(40px)'
+        position: 'fixed',
+        top: '50%',
+        left: '50%',
+        transform: 'translate(-50%, -50%)',
+        width: '600px',
+        height: '600px',
+        background: `radial-gradient(circle, ${colors.primary}11 0%, transparent 70%)`,
+        pointerEvents: 'none',
+        zIndex: 0
       }} />
 
-      <div style={{ maxWidth: '600px', width: '100%', zIndex: 1 }}>
-        {/* --- GLITCH 404 --- */}
-        <h1 style={{ 
-          fontSize: 'clamp(5rem, 15vw, 8rem)', 
-          fontWeight: 900, 
-          margin: 0, 
-          letterSpacing: '-5px',
-          background: `linear-gradient(135deg, ${theme.secondary} 0%, ${theme.primary} 100%)`,
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          filter: `drop-shadow(0 0 15px ${theme.primary}44)`
-        }}>
-          404
-        </h1>
-
-        <h2 style={{ fontSize: '1.2rem', fontWeight: 300, letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '30px', opacity: 0.8 }}>
-          Dimension Not Found
-        </h2>
-
-        {/* --- LIVE SEARCH BOX --- */}
-        <div style={{ marginBottom: '40px' }}>
-          <form onSubmit={handleSearch} style={{ position: 'relative', maxWidth: '400px', margin: '0 auto' }}>
-            <input 
-              type="text"
-              placeholder="Search Feed or Creators..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '15px 25px',
-                borderRadius: '100px',
-                border: `1px solid ${theme.border}`,
-                backgroundColor: theme.card,
-                color: theme.text,
-                fontSize: '1rem',
-                outline: 'none',
-                backdropFilter: 'blur(10px)',
-                transition: 'all 0.3s ease'
-              }}
-              onFocus={(e) => e.target.style.borderColor = theme.secondary}
-              onBlur={(e) => e.target.style.borderColor = theme.border}
-            />
-            <button type="submit" style={{
-              position: 'absolute',
-              right: '10px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '1.2rem'
-            }}>
-              🔍
-            </button>
-          </form>
-          <p style={{ fontSize: '0.8rem', marginTop: '10px', opacity: 0.5 }}>
-            Searching live across <b>Feed</b> and <b>Creators</b>
+      <div style={{ maxWidth: '700px', width: '100%', zIndex: 1, textAlign: 'center' }}>
+        
+        {/* --- HEADER --- */}
+        <div style={{ marginBottom: '50px' }}>
+          <h1 style={{ 
+            fontSize: '120px', 
+            fontWeight: 900, 
+            margin: 0, 
+            background: `linear-gradient(to bottom, #fff 30%, ${colors.primary})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            letterSpacing: '-5px'
+          }}>
+            404
+          </h1>
+          <h2 style={{ fontSize: '24px', fontWeight: 700, marginTop: '-20px' }}>
+            We couldn't find that page.
+          </h2>
+          <p style={{ opacity: 0.6, fontSize: '16px' }}>
+            But we can help you find what you're looking for right now.
           </p>
         </div>
 
-        {/* --- NAVIGATION LINKS --- */}
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{ 
-              background: `linear-gradient(to right, ${theme.primary}, ${theme.accent})`,
+        {/* --- LIVE SEARCH ENGINE --- */}
+        <div style={{ marginBottom: '30px', position: 'relative' }}>
+          <input 
+            type="text"
+            placeholder="Type to search creators or feeds..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '20px 30px',
+              borderRadius: '20px',
+              border: `2px solid ${searchQuery ? colors.secondary : colors.border}`,
+              backgroundColor: colors.card,
               color: '#fff',
-              padding: '12px 25px',
-              borderRadius: '50px',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              boxShadow: `0 5px 20px ${theme.primary}33`
+              fontSize: '18px',
+              outline: 'none',
+              transition: 'all 0.3s ease',
+              boxShadow: searchQuery ? `0 0 30px ${colors.secondary}22` : 'none'
+            }}
+          />
+          
+          {/* --- SEARCH RESULTS DROPDOWN --- */}
+          {searchQuery.length > 0 && (
+            <div style={{
+              marginTop: '10px',
+              backgroundColor: colors.card,
+              borderRadius: '15px',
+              border: `1px solid ${colors.border}`,
+              textAlign: 'left',
+              overflow: 'hidden',
+              boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
             }}>
-              GO HOME
+              {results.length > 0 ? (
+                results.map((item, i) => (
+                  <a key={i} href={item.link} style={{ 
+                    display: 'block', 
+                    padding: '15px 25px', 
+                    textDecoration: 'none',
+                    borderBottom: i !== results.length - 1 ? `1px solid ${colors.border}` : 'none',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.05)'}
+                  onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                  >
+                    <div style={{ color: colors.secondary, fontSize: '12px', fontWeight: 800, textTransform: 'uppercase' }}>{item.type}</div>
+                    <div style={{ color: '#fff', fontSize: '16px' }}>{item.title} containing "{searchQuery}"</div>
+                  </a>
+                ))
+              ) : (
+                <div style={{ padding: '20px', opacity: 0.5 }}>
+                  {isSearching ? 'Searching our feeds...' : 'Keep typing to see results...'}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* --- QUICK ACTIONS --- */}
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginBottom: '60px' }}>
+          <Link href="/" style={{ textDecoration: 'none', flex: 1 }}>
+            <div style={{ 
+              padding: '15px', 
+              borderRadius: '12px', 
+              backgroundColor: '#fff', 
+              color: '#000', 
+              fontWeight: 700 
+            }}>
+              Go Home
             </div>
           </Link>
-
-          <a href="https://onlycrave.com" style={{ textDecoration: 'none' }}>
+          <a href="https://onlycrave.com" style={{ textDecoration: 'none', flex: 1 }}>
             <div style={{ 
-              border: `1px solid ${theme.secondary}`,
-              color: theme.secondary,
-              padding: '12px 25px',
-              borderRadius: '50px',
-              fontWeight: 600,
-              fontSize: '0.9rem',
-              cursor: 'pointer',
-              backgroundColor: 'transparent'
+              padding: '15px', 
+              borderRadius: '12px', 
+              border: `1px solid ${colors.border}`, 
+              color: '#fff', 
+              fontWeight: 700,
+              backgroundColor: 'rgba(255,255,255,0.05)'
             }}>
-              VISIT ONLYCRAVE
+              Visit OnlyCrave
             </div>
           </a>
         </div>
-      </div>
 
-      {/* --- FOOTER --- */}
-      <div style={{ 
-        marginTop: '60px', 
-        opacity: 0.4, 
-        fontSize: '0.7rem', 
-        fontWeight: 700, 
-        letterSpacing: '2px',
-        textTransform: 'uppercase'
-      }}>
-        Network Status: <span style={{ color: '#00ff88' }}>Online</span> | ONLYCRAVE GLOBAL
+        {/* --- FOOTER --- */}
+        <div style={{ borderTop: `1px solid ${colors.border}`, paddingTop: '30px' }}>
+          <p style={{ fontSize: '12px', opacity: 0.4, letterSpacing: '2px' }}>
+            ONLYCRAVE DIRECTORY SERVICES
+          </p>
+        </div>
+
       </div>
 
       <style jsx global>{`
-        body {
-          margin: 0;
-          padding: 0;
-          overflow-x: hidden;
-        }
-        @keyframes pulse {
-          0% { transform: scale(1); opacity: 0.5; }
-          50% { transform: scale(1.05); opacity: 0.8; }
-          100% { transform: scale(1); opacity: 0.5; }
-        }
+        body { background: #050505; margin: 0; }
+        input::placeholder { color: rgba(255,255,255,0.3); }
       `}</style>
     </div>
   );
