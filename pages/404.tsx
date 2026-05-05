@@ -6,7 +6,7 @@ export default function Custom404() {
   const [mounted, setMounted] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [allContent, setAllContent] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   const colors = {
     bg: '#050505',
@@ -17,20 +17,23 @@ export default function Custom404() {
     border: 'rgba(255,255,255,0.1)'
   };
 
-  // 1. Fetch and Parse Feeds on load
   useEffect(() => {
     setMounted(true);
+    
+    // The feeds we want to "Live Search"
     const feeds = [
       { url: 'https://onlycrave.com/feed/', type: 'Post' },
       { url: 'https://onlycrave.com/creators/feed/', type: 'Creator' }
     ];
 
-    const loadFeeds = async () => {
+    const fetchFeeds = async () => {
       try {
-        const results = await Promise.all(feeds.map(async (f) => {
-          // Using a public proxy to bypass CORS restrictions
-          const res = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(f.url)}`);
-          const data = await res.json();
+        const results = await Promise.all(feeds.map(async (feedInfo) => {
+          // We use a proxy (allorigins) to get around browser security blocks
+          const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(feedInfo.url)}`);
+          const data = await response.json();
+          
+          // Convert the raw text into searchable items
           const parser = new DOMParser();
           const xml = parser.parseFromString(data.contents, "text/xml");
           const items = Array.from(xml.querySelectorAll("item"));
@@ -38,29 +41,31 @@ export default function Custom404() {
           return items.map(item => ({
             title: item.querySelector("title")?.textContent || "Untitled",
             link: item.querySelector("link")?.textContent || "#",
-            type: f.type,
-            // Clean up description if needed
-            desc: item.querySelector("description")?.textContent?.replace(/<[^>]*>/g, '').substring(0, 60) + '...'
+            type: feedInfo.type,
+            // Removes messy HTML tags from descriptions
+            desc: item.querySelector("description")?.textContent?.replace(/<[^>]*>/g, '').substring(0, 80) + '...'
           }));
         }));
         
         setAllContent(results.flat());
+        setStatus('ready');
       } catch (err) {
-        console.error("Feed load failed", err);
-      } finally {
-        setLoading(false);
+        console.error("Search engine failed to sync:", err);
+        setStatus('error');
       }
     };
 
-    loadFeeds();
+    fetchFeeds();
   }, []);
 
-  // 2. Filter content as the user types
+  // Filtering logic: Finds matches as you type
   const filteredResults = useMemo(() => {
-    if (!searchQuery) return [];
+    const query = searchQuery.toLowerCase().trim();
+    if (!query) return [];
     return allContent.filter(item => 
-      item.title.toLowerCase().includes(searchQuery.toLowerCase())
-    ).slice(0, 5); // Limit to top 5 results for beauty
+      item.title.toLowerCase().includes(query) || 
+      item.type.toLowerCase().includes(query)
+    ).slice(0, 6);
   }, [searchQuery, allContent]);
 
   if (!mounted) return null;
@@ -69,76 +74,131 @@ export default function Custom404() {
     <div style={{ 
       backgroundColor: colors.bg, color: colors.text, minHeight: '100vh', 
       fontFamily: "'Inter', sans-serif", display: 'flex', flexDirection: 'column',
-      alignItems: 'center', padding: '40px 20px'
+      alignItems: 'center', padding: '60px 20px', position: 'relative', overflowX: 'hidden'
     }}>
-      <Head><title>Page Not Found | OnlyCrave Discovery</title></Head>
+      <Head>
+        <title>Something went wrong | OnlyCrave</title>
+      </Head>
 
-      <div style={{ maxWidth: '650px', width: '100%', zIndex: 1, textAlign: 'center' }}>
+      {/* Decorative Neon Blur */}
+      <div style={{
+        position: 'absolute', top: '-10%', right: '-10%', width: '400px', height: '400px',
+        background: `radial-gradient(circle, ${colors.primary}22 0%, transparent 70%)`,
+        filter: 'blur(60px)', zIndex: 0
+      }} />
+
+      <div style={{ maxWidth: '600px', width: '100%', zIndex: 1, textAlign: 'center' }}>
         
+        {/* --- HEADER --- */}
         <h1 style={{ 
-          fontSize: '120px', fontWeight: 900, margin: '20px 0', 
+          fontSize: '140px', fontWeight: 900, margin: 0, lineHeight: 1,
           background: `linear-gradient(to bottom, #fff, ${colors.primary})`,
-          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent'
+          WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
+          letterSpacing: '-8px'
         }}>404</h1>
         
-        <h2 style={{ fontSize: '22px', marginBottom: '10px' }}>Oops! That page wandered off.</h2>
-        <p style={{ opacity: 0.6, marginBottom: '40px' }}>Search below to find creators or trending posts instantly.</p>
+        <h2 style={{ fontSize: '26px', fontWeight: 700, letterSpacing: '-0.5px' }}>
+          Lost in space?
+        </h2>
+        <p style={{ opacity: 0.5, marginBottom: '40px', fontSize: '16px' }}>
+          We couldn't find that page, but our live feed is still active.
+        </p>
 
-        {/* --- LIVE SEARCH --- */}
-        <div style={{ position: 'relative', marginBottom: '40px' }}>
-          <input 
-            type="text"
-            placeholder={loading ? "Waking up the search engine..." : "Search for a creator or topic..."}
-            disabled={loading}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            style={{
-              width: '100%', padding: '18px 25px', borderRadius: '15px',
-              border: `1px solid ${searchQuery ? colors.secondary : colors.border}`,
-              backgroundColor: colors.card, color: '#fff', fontSize: '16px', outline: 'none'
-            }}
-          />
+        {/* --- SEARCH BOX --- */}
+        <div style={{ position: 'relative', marginBottom: '20px' }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', backgroundColor: colors.card,
+            borderRadius: '20px', border: `1px solid ${searchQuery ? colors.secondary : colors.border}`,
+            padding: '5px 20px', transition: 'all 0.3s ease',
+            boxShadow: searchQuery ? `0 0 25px ${colors.secondary}15` : 'none'
+          }}>
+            <span style={{ fontSize: '20px', marginRight: '15px', opacity: 0.5 }}>🔍</span>
+            <input 
+              type="text"
+              placeholder={status === 'loading' ? "Syncing live feeds..." : "Search creators or topics..."}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%', padding: '15px 0', background: 'transparent',
+                border: 'none', color: '#fff', fontSize: '16px', outline: 'none'
+              }}
+            />
+            {status === 'loading' && (
+               <div className="spinner" style={{ width: '15px', height: '15px', border: '2px solid #333', borderTopColor: colors.secondary, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+            )}
+          </div>
 
+          {/* --- RESULTS DROPDOWN --- */}
           {searchQuery && (
             <div style={{
-              position: 'absolute', top: '70px', left: 0, right: 0,
-              backgroundColor: colors.card, borderRadius: '15px',
+              position: 'absolute', top: '75px', left: 0, right: 0,
+              backgroundColor: colors.card, borderRadius: '20px',
               border: `1px solid ${colors.border}`, textAlign: 'left',
-              overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.5)', zIndex: 10
+              overflow: 'hidden', boxShadow: '0 30px 60px rgba(0,0,0,0.8)', zIndex: 10,
+              backdropFilter: 'blur(10px)'
             }}>
               {filteredResults.length > 0 ? (
                 filteredResults.map((item, i) => (
                   <a key={i} href={item.link} style={{ 
-                    display: 'block', padding: '15px 20px', textDecoration: 'none',
-                    borderBottom: `1px solid ${colors.border}`
-                  }}>
-                    <span style={{ color: colors.secondary, fontSize: '10px', fontWeight: 800, textTransform: 'uppercase' }}>{item.type}</span>
-                    <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600 }}>{item.title}</div>
-                    <div style={{ color: '#888', fontSize: '12px' }}>{item.desc}</div>
+                    display: 'block', padding: '18px 25px', textDecoration: 'none',
+                    borderBottom: i !== filteredResults.length - 1 ? `1px solid ${colors.border}` : 'none',
+                    transition: 'background 0.2s'
+                  }}
+                  onMouseOver={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                  onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ color: '#fff', fontSize: '15px', fontWeight: 600 }}>{item.title}</div>
+                      <span style={{ fontSize: '10px', color: colors.secondary, fontWeight: 800, border: `1px solid ${colors.secondary}44`, padding: '2px 8px', borderRadius: '4px' }}>
+                        {item.type}
+                      </span>
+                    </div>
+                    <div style={{ color: '#777', fontSize: '12px', marginTop: '4px' }}>{item.desc}</div>
                   </a>
                 ))
               ) : (
-                <div style={{ padding: '20px', color: '#666' }}>No matches found. Try another name!</div>
+                <div style={{ padding: '30px', textAlign: 'center', opacity: 0.5 }}>
+                  No results for "{searchQuery}". Try searching "Crave" or "New".
+                </div>
               )}
             </div>
           )}
         </div>
 
-        {/* --- ACTIONS --- */}
-        <div style={{ display: 'flex', gap: '15px' }}>
+        {/* --- BUTTONS --- */}
+        <div style={{ display: 'flex', gap: '12px', marginTop: '40px' }}>
           <Link href="/" style={{ flex: 1, textDecoration: 'none' }}>
-            <div style={{ padding: '15px', borderRadius: '12px', background: '#fff', color: '#000', fontWeight: 700 }}>Go Home</div>
+            <div style={{ 
+              padding: '16px', borderRadius: '15px', background: '#fff', 
+              color: '#000', fontWeight: 800, fontSize: '14px', transition: 'transform 0.2s' 
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-2px)'}
+            onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+            >
+              Back to Home
+            </div>
           </Link>
           <a href="https://onlycrave.com" style={{ flex: 1, textDecoration: 'none' }}>
-            <div style={{ padding: '15px', borderRadius: '12px', border: `1px solid ${colors.border}`, color: '#fff' }}>OnlyCrave Web</div>
+            <div style={{ 
+              padding: '16px', borderRadius: '15px', border: `1px solid ${colors.border}`, 
+              color: '#fff', fontWeight: 800, fontSize: '14px', backgroundColor: 'rgba(255,255,255,0.03)' 
+            }}>
+              Visit OnlyCrave
+            </div>
           </a>
         </div>
 
+        {/* --- FOOTER STATUS --- */}
+        <div style={{ marginTop: '80px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px', opacity: 0.3 }}>
+          <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#00ff88' }} />
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '2px' }}>SYSTEMS OPERATIONAL</span>
+        </div>
       </div>
 
       <style jsx global>{`
-        body { background: #050505; margin: 0; }
-        input:focus { box-shadow: 0 0 20px ${colors.secondary}33; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        body { background-color: #050505; margin: 0; }
+        input::placeholder { color: rgba(255,255,255,0.2); }
       `}</style>
     </div>
   );
