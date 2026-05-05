@@ -1,41 +1,40 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 
 export default function Custom404() {
   const [mounted, setMounted] = useState(false);
-  const [isFansnub, setIsFansnub] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
+
+  // Realistic futuristic theme colors
+  const theme = {
+    bg: resolvedTheme === 'dark' ? '#050507' : '#f8f9fa',
+    text: resolvedTheme === 'dark' ? '#ffffff' : '#1a1a1b',
+    primary: '#e33cc7', // Pink-Neon
+    secondary: '#2ddfff', // Cyan-Neon
+    accent: '#0102FD', // Deep Blue
+    card: resolvedTheme === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)',
+    border: resolvedTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+  };
 
   useEffect(() => {
     setMounted(true);
-    const host = window.location.hostname;
-    
-    // 1. Check for Fansnub domain
-    if (host.includes('your.onlycrave.com')) {
-      setIsFansnub(true);
-    }
-
-    // 2. Sync theme from OnlyCrave's localStorage
     const savedTheme = localStorage.getItem('crave-theme');
     if (savedTheme === 'light') {
       setResolvedTheme('light');
-    } else if (savedTheme === 'dark') {
-      setResolvedTheme('dark');
     } else {
       const systemDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       setResolvedTheme(systemDark ? 'dark' : 'light');
     }
   }, []);
 
-  const theme = {
-    bg: isFansnub ? '#050505' : (resolvedTheme === 'dark' ? '#0a0a0c' : '#ffffff'),
-    text: isFansnub ? '#ffffff' : (resolvedTheme === 'dark' ? '#ffffff' : '#1a1a1b'),
-    primary: '#e33cc7',
-    secondary: '#2ddfff',
-    blue: '#0102FD',
-    card: isFansnub ? '#111111' : (resolvedTheme === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'),
-    border: isFansnub ? '#333' : (resolvedTheme === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'),
+  // Live Search Logic - Redirects to OnlyCrave search with the query
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      window.location.href = `https://onlycrave.com/search?q=${encodeURIComponent(searchQuery)}`;
+    }
   };
 
   if (!mounted) return null;
@@ -46,79 +45,149 @@ export default function Custom404() {
       color: theme.text, 
       minHeight: '100vh', 
       display: 'flex', 
+      flexDirection: 'column',
       alignItems: 'center', 
       justifyContent: 'center', 
-      fontFamily: "'Inter', sans-serif",
+      fontFamily: "'Inter', system-ui, sans-serif",
       textAlign: 'center',
-      padding: '20px'
+      padding: '20px',
+      overflowX: 'hidden',
+      position: 'relative'
     }}>
       <Head>
-        <title>404 - Page Not Found | {isFansnub ? 'Fansnub Mirror' : 'OnlyCrave'}</title>
+        <title>404 | Lost in the Multiverse</title>
       </Head>
 
-      <div style={{ maxWidth: '500px', width: '100%' }}>
-        {/* --- ICON --- */}
-        <div style={{ fontSize: '5rem', marginBottom: '20px' }}>
-          {isFansnub ? '📡' : '🔍'}
-        </div>
+      {/* Futuristic Background Elements */}
+      <div style={{
+        position: 'absolute',
+        width: '300px',
+        height: '300px',
+        background: `radial-gradient(circle, ${theme.primary}22 0%, transparent 70%)`,
+        top: '10%',
+        left: '10%',
+        zIndex: 0,
+        filter: 'blur(40px)'
+      }} />
 
-        {/* --- ERROR CODE --- */}
+      <div style={{ maxWidth: '600px', width: '100%', zIndex: 1 }}>
+        {/* --- GLITCH 404 --- */}
         <h1 style={{ 
-          fontSize: '6rem', 
+          fontSize: 'clamp(5rem, 15vw, 8rem)', 
           fontWeight: 900, 
           margin: 0, 
-          lineHeight: 1,
-          background: `linear-gradient(135deg, ${theme.blue} 0%, ${theme.primary} 100%)`,
+          letterSpacing: '-5px',
+          background: `linear-gradient(135deg, ${theme.secondary} 0%, ${theme.primary} 100%)`,
           WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent'
+          WebkitTextFillColor: 'transparent',
+          filter: `drop-shadow(0 0 15px ${theme.primary}44)`
         }}>
           404
         </h1>
 
-        {/* --- DYNAMIC TEXT --- */}
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '10px' }}>
-          {isFansnub ? 'CONNECTION LOST' : 'PAGE NOT FOUND'}
+        <h2 style={{ fontSize: '1.2rem', fontWeight: 300, letterSpacing: '4px', textTransform: 'uppercase', marginBottom: '30px', opacity: 0.8 }}>
+          Dimension Not Found
         </h2>
 
-        <p style={{ opacity: 0.6, lineHeight: 1.6, margin: '20px 0 40px' }}>
-          {isFansnub 
-            ? "The profile or page you are looking for has been moved to our new infrastructure. Please return to the main migration gateway."
-            : "The page you're looking for doesn't exist or has been moved to a new URL. Check the spelling or return to the directory."}
-        </p>
+        {/* --- LIVE SEARCH BOX --- */}
+        <div style={{ marginBottom: '40px' }}>
+          <form onSubmit={handleSearch} style={{ position: 'relative', maxWidth: '400px', margin: '0 auto' }}>
+            <input 
+              type="text"
+              placeholder="Search Feed or Creators..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '15px 25px',
+                borderRadius: '100px',
+                border: `1px solid ${theme.border}`,
+                backgroundColor: theme.card,
+                color: theme.text,
+                fontSize: '1rem',
+                outline: 'none',
+                backdropFilter: 'blur(10px)',
+                transition: 'all 0.3s ease'
+              }}
+              onFocus={(e) => e.target.style.borderColor = theme.secondary}
+              onBlur={(e) => e.target.style.borderColor = theme.border}
+            />
+            <button type="submit" style={{
+              position: 'absolute',
+              right: '10px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '1.2rem'
+            }}>
+              🔍
+            </button>
+          </form>
+          <p style={{ fontSize: '0.8rem', marginTop: '10px', opacity: 0.5 }}>
+            Searching live across <b>Feed</b> and <b>Creators</b>
+          </p>
+        </div>
 
-        {/* --- ACTION BUTTON --- */}
-        <Link href="/" style={{ textDecoration: 'none' }}>
-          <div style={{ 
-            background: isFansnub ? theme.blue : `linear-gradient(to right, ${theme.primary}, ${theme.secondary})`,
-            color: '#fff',
-            padding: '18px 30px',
-            borderRadius: '15px',
-            fontWeight: 900,
-            fontSize: '1rem',
-            cursor: 'pointer',
-            boxShadow: `0 10px 30px ${isFansnub ? theme.blue + '44' : theme.primary + '44'}`,
-            display: 'inline-block',
-            transition: 'transform 0.2s'
-          }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
-          >
-            {isFansnub ? 'GO TO MIGRATION GATEWAY' : 'BACK TO DIRECTORY'}
-          </div>
-        </Link>
+        {/* --- NAVIGATION LINKS --- */}
+        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ 
+              background: `linear-gradient(to right, ${theme.primary}, ${theme.accent})`,
+              color: '#fff',
+              padding: '12px 25px',
+              borderRadius: '50px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              boxShadow: `0 5px 20px ${theme.primary}33`
+            }}>
+              GO HOME
+            </div>
+          </Link>
 
-        {/* --- SUBTLE WARNING FOR FANSNUB --- */}
-        {isFansnub && (
-          <div style={{ marginTop: '40px', padding: '15px', background: 'rgba(255, 62, 128, 0.1)', border: '1px solid #ff3e80', borderRadius: '12px', fontSize: '0.8rem', color: '#ff3e80', fontWeight: 700 }}>
-            NOTICE: your.onlycrave.com is now OnlyCrave.com. All links are being redirected.
-          </div>
-        )}
+          <a href="https://onlycrave.com" style={{ textDecoration: 'none' }}>
+            <div style={{ 
+              border: `1px solid ${theme.secondary}`,
+              color: theme.secondary,
+              padding: '12px 25px',
+              borderRadius: '50px',
+              fontWeight: 600,
+              fontSize: '0.9rem',
+              cursor: 'pointer',
+              backgroundColor: 'transparent'
+            }}>
+              VISIT ONLYCRAVE
+            </div>
+          </a>
+        </div>
       </div>
 
-      {/* --- FOOTER LOGO --- */}
-      <div style={{ position: 'absolute', bottom: '40px', opacity: 0.2, fontWeight: 900, letterSpacing: '5px', fontSize: '0.7rem' }}>
-        {isFansnub ? 'FANSNUB LEGACY' : 'ONLYCRAVE GLOBAL'}
+      {/* --- FOOTER --- */}
+      <div style={{ 
+        marginTop: '60px', 
+        opacity: 0.4, 
+        fontSize: '0.7rem', 
+        fontWeight: 700, 
+        letterSpacing: '2px',
+        textTransform: 'uppercase'
+      }}>
+        Network Status: <span style={{ color: '#00ff88' }}>Online</span> | ONLYCRAVE GLOBAL
       </div>
+
+      <style jsx global>{`
+        body {
+          margin: 0;
+          padding: 0;
+          overflow-x: hidden;
+        }
+        @keyframes pulse {
+          0% { transform: scale(1); opacity: 0.5; }
+          50% { transform: scale(1.05); opacity: 0.8; }
+          100% { transform: scale(1); opacity: 0.5; }
+        }
+      `}</style>
     </div>
   );
 }
