@@ -12,7 +12,7 @@ export default function Custom404() {
     const host = window.location.hostname;
     
     // 1. Check for Fansnub domain
-    if (host.includes('fansnub.com')) {
+    if (host.includes('your.onlycrave.com')) {
       setIsFansnub(true);
     }
 
@@ -110,7 +110,7 @@ export default function Custom404() {
         {/* --- SUBTLE WARNING FOR FANSNUB --- */}
         {isFansnub && (
           <div style={{ marginTop: '40px', padding: '15px', background: 'rgba(255, 62, 128, 0.1)', border: '1px solid #ff3e80', borderRadius: '12px', fontSize: '0.8rem', color: '#ff3e80', fontWeight: 700 }}>
-            NOTICE: Fansnub.com is now OnlyCrave.com. All links are being redirected.
+            NOTICE: your.onlycrave.com is now OnlyCrave.com. All links are being redirected.
           </div>
         )}
       </div>
