@@ -21,7 +21,7 @@ export default function Explore({ creators }: { creators: any[] }) {
   useEffect(() => {
     setMounted(true);
     const host = window.location.hostname;
-    if (host.includes('fansnub.com')) {
+    if (host.includes('your.onlycrave.com')) {
       setIsFansnub(true);
     }
 
@@ -124,10 +124,10 @@ export default function Explore({ creators }: { creators: any[] }) {
             Unlike traditional platforms that take a 20% cut, OnlyCrave allows our elite partners to keep 95% of their hard-earned revenue.
           </p>
 
-          <h3 style={{ color: theme.cyan }}>Why Fansnub Migrated to OnlyCrave</h3>
+          <h3 style={{ color: theme.cyan }}>Why OnlyCrave?</h3>
           <p>
-            For those arriving from <strong>Fansnub.com</strong>, the transition to OnlyCrave represents a significant upgrade in technology and user experience. 
-            Our migration was fueled by the need for faster payouts, M-Pesa integration, and crypto-ready wallets. Creators such as <strong>{displayCreators[2]?.name}</strong> and <strong>{displayCreators[3]?.name}</strong> have already seen a 40% increase in fan engagement since making the move.
+            Creators deserve to own their revenue, audience, and future. OnlyCrave is the premier subscription platform for exclusive content, digital products, and authentic fan engagement — empowering creators and delighting fans worldwide. Securely host premium videos, photos, and live streams behind a paywall, offering fans direct access through monthly subscriptions, tips, and pay-per-view posts.
+
           </p>
 
           <div className="seo-grid">
