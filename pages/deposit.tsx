@@ -2,8 +2,13 @@ import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import axios from 'axios';
+import { GetServerSideProps } from 'next';
 
-export default function DepositPage() {
+interface DepositPageProps {
+  cpMerchantId: string;
+}
+
+export default function DepositPage({ cpMerchantId }: DepositPageProps) {
   const router = useRouter();
   const { amount: queryAmount } = router.query;
 
@@ -37,15 +42,15 @@ export default function DepositPage() {
       } else if (method === 'crypto') {
         const params = new URLSearchParams({
           cmd: '_pay_simple',
-          merchant: process.env.NEXT_PUBLIC_CP_MERCHANT_ID || '',
+          merchant: cpMerchantId, // Correctly using the prop from SSR
           item_name: `Wallet Deposit`,
           amountf: amount,
           currency: 'USD',
+          success_url: `${window.location.origin}/deposit?success=true`,
         });
         window.open(`https://www.coinpayments.net/index.php?${params.toString()}`, '_blank');
         setReceiptMode(true);
       } else if (method === 'patreon') {
-        // Redirecting to your custom Patreon bridge/checkout
         window.open('https://trimd.cc/depositpatreononlycrave', '_blank');
         setReceiptMode(true);
       }
@@ -56,8 +61,26 @@ export default function DepositPage() {
     }
   };
 
+  const handleDownload = () => {
+    const receiptContent = `
+      ONLYCRAVE DEPOSIT VOUCHER
+      -------------------------
+      Transaction Ref: ${transactionId}
+      Amount: $${amount}
+      Method: ${method?.toUpperCase()}
+      Status: PENDING CONFIRMATION
+      Date: ${new Date().toLocaleString()}
+    `;
+    const element = document.createElement("a");
+    const file = new Blob([receiptContent], {type: 'text/plain'});
+    element.href = URL.createObjectURL(file);
+    element.download = `Receipt-${transactionId}.txt`;
+    document.body.appendChild(element);
+    element.click();
+  };
+
   const ReceiptView = () => (
-    <div id="receipt" style={{ background: '#fff', color: '#000', padding: '30px', borderRadius: '25px', textAlign: 'center', border: '3px solid #0102FD' }}>
+    <div id="receipt" style={{ background: '#fff', color: '#000', padding: '25px', borderRadius: '25px', textAlign: 'center', border: '3px solid #0102FD' }}>
       <div style={{ fontSize: '22px', fontWeight: '900', color: '#0102FD', marginBottom: '5px' }}>ONLYCRAVE</div>
       <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '2px', color: '#888', marginBottom: '20px' }}>DEPOSIT VOUCHER</div>
       
@@ -74,12 +97,16 @@ export default function DepositPage() {
           <span>Ref ID:</span> <strong>{transactionId}</strong>
         </div>
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Status:</span> <span style={{ color: '#ff424d', fontWeight: 'bold' }}>WAITING FOR SCREENSHOT</span>
+          <span>Status:</span> <span style={{ color: '#ff424d', fontWeight: 'bold' }}>WAITING FOR PROOF</span>
         </div>
       </div>
 
-      <div style={{ marginTop: '25px', padding: '10px', background: '#fff9e6', border: '1px solid #ffeeba', borderRadius: '10px', fontSize: '11px', color: '#856404' }}>
-        ⚠️ <strong>Action Required:</strong> Take a screenshot of this page and the payment confirmation, then upload both to the wallet page.
+      <div style={{ marginTop: '20px', padding: '12px', background: '#eef2ff', border: '1px solid #c7d2fe', borderRadius: '12px', fontSize: '11px', color: '#3730a3', textAlign: 'left', lineHeight: '1.4' }}>
+        <strong>FINAL STEPS:</strong><br/>
+        1. Take a screenshot of this receipt.<br/>
+        2. Go to <a href="https://onlycrave.com/my/wallet" target="_blank" style={{color: '#0102FD', fontWeight: 'bold'}}>Wallet Page</a>.<br/>
+        3. Enter <b>${amount}</b>, click Manual, and upload the screenshot.<br/>
+        4. Click "Add Funds" and wait 5-10 mins.
       </div>
     </div>
   );
@@ -89,6 +116,8 @@ export default function DepositPage() {
       <Head><title>Deposit Hub | OnlyCrave</title></Head>
 
       <div style={{ width: '100%', maxWidth: '420px', background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)', borderRadius: '35px', padding: '30px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
+        {error && <div style={{background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '10px', borderRadius: '10px', fontSize: '12px', marginBottom: '15px', textAlign: 'center'}}>{error}</div>}
+        
         {!receiptMode ? (
           <>
             <h1 style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '2px', marginBottom: '30px', textAlign: 'center' }}>DEPOSIT INTERFACE</h1>
@@ -106,12 +135,6 @@ export default function DepositPage() {
               <button onClick={() => setMethod('crypto')} style={{ background: method === 'crypto' ? '#f39c12' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>₿ CRYPTO</button>
             </div>
 
-            {method === 'patreon' && (
-              <div style={{ background: 'rgba(255, 66, 77, 0.1)', padding: '15px', borderRadius: '15px', fontSize: '12px', color: '#ff6b73', marginBottom: '20px', border: '1px solid rgba(255, 66, 77, 0.2)' }}>
-                ℹ️ <strong>Card/PayPal via Patreon:</strong> Best for International Cards. You will be redirected to Patreon to complete the secure checkout.
-              </div>
-            )}
-
             {method === 'mpesa' && (
               <input placeholder="Phone: 254..." value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '15px', marginBottom: '20px', background: '#000', border: '1px solid #444', color: '#fff', fontSize: '16px' }} />
             )}
@@ -123,8 +146,16 @@ export default function DepositPage() {
         ) : (
           <>
             <ReceiptView />
-            <button onClick={() => window.close()} style={{ width: '100%', marginTop: '25px', padding: '18px', borderRadius: '50px', background: '#222', border: 'none', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
-              I HAVE SCREENSHOTTED THIS
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' }}>
+              <button onClick={handleDownload} style={{ padding: '15px', borderRadius: '50px', background: '#fff', color: '#000', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
+                💾 DOWNLOAD
+              </button>
+              <button onClick={() => window.open('https://onlycrave.com/my/wallet', '_blank')} style={{ padding: '15px', borderRadius: '50px', background: '#0102FD', color: '#fff', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
+                🚀 UPLOAD NOW
+              </button>
+            </div>
+            <button onClick={() => window.close()} style={{ width: '100%', marginTop: '15px', padding: '15px', background: 'transparent', border: '1px solid #444', color: '#888', borderRadius: '50px', cursor: 'pointer', fontSize: '11px' }}>
+              CLOSE INTERFACE
             </button>
           </>
         )}
@@ -132,3 +163,11 @@ export default function DepositPage() {
     </div>
   );
 }
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { 
+    props: { 
+      cpMerchantId: process.env.COINPAYMENTS_MERCHANT_ID || '' 
+    } 
+  };
+};
