@@ -45,11 +45,11 @@ export default function ExitPage() {
           <div style={{ fontSize: '3.5rem', marginBottom: '20px' }}>🛡️</div>
 
           <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '15px', color: '#fff' }}>
-            Security Intercept
+           External Site Warning
           </h1>
           
           <p style={{ color: '#aaa', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '20px' }}>
-            You are navigating to an external protocol. Review the destination:
+            You are about to visit a website outside OnlyCrave. This link will take you to a third-party website not operated by us. We can’t guarantee its content or security.
           </p>
           
           <div style={{ background: 'rgba(0, 0, 0, 0.4)', borderLeft: '4px solid #00d2ff', padding: '15px', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', color: '#00d2ff', wordBreak: 'break-all', textAlign: 'left', marginBottom: '30px' }}>
