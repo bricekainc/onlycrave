@@ -74,7 +74,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
     const element = document.createElement("a");
     const file = new Blob([receiptContent], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = `Receipt-${transactionId}.txt`;
+    element.download = `Receipt-${transactionId}.jpg`;
     document.body.appendChild(element);
     element.click();
   };
