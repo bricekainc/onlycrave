@@ -1,74 +1,82 @@
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 export default function ExitPage() {
   const router = useRouter();
   const { url } = router.query;
   const [decodedUrl, setDecodedUrl] = useState<string>('');
+  const [hostname, setHostname] = useState<string>('External Site');
 
   useEffect(() => {
-    if (url) {
-      setDecodedUrl(decodeURIComponent(url as string));
+    if (url && typeof url === 'string') {
+      const decoded = decodeURIComponent(url);
+      setDecodedUrl(decoded);
+      try {
+        const urlObj = new URL(decoded);
+        setHostname(urlObj.hostname);
+      } catch (e) {
+        setHostname('External Site');
+      }
     }
   }, [url]);
 
   const handleBack = () => {
-    if (window.history.length > 1) {
-      router.back();
-    } else {
-      window.close();
+    if (typeof window !== 'undefined') {
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        window.close();
+      }
     }
   };
 
-  const hostname = decodedUrl ? new URL(decodedUrl).hostname : 'External Site';
-
   return (
-    <div style={{ backgroundColor: '#0f0f19', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif' }}>
+    <>
       <Head>
-        <title>Visiting {hostname} via OnlyCrave</title>
-        <meta name="description" content={`You are leaving OnlyCrave to visit ${hostname}. Please verify the destination for your security.`} />
-        <meta name="robots" content="noindex, follow" />
+        <title>Security Check: {hostname}</title>
+        <meta name="description" content={`You are leaving OnlyCrave to visit ${hostname}.`} />
+        <meta name="robots" content="noindex, nofollow" />
       </Head>
 
-      <main style={{ background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(15px)', border: '1px solid rgba(0, 210, 255, 0.2)', borderRadius: '30px', padding: '40px', maxWidth: '450px', width: '90%', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
-        
-        <div style={{ fontSize: '3rem', color: '#00d2ff', marginBottom: '20px', filter: 'drop-shadow(0 0 10px rgba(0, 210, 255, 0.4))' }}>
-          🛡️
-        </div>
-
-        <h1 style={{ fontSize: '1.2rem', textTransform: 'uppercase', letter-spacing: '2px', marginBottom: '15px' }}>
-          Security Intercept
-        </h1>
-        
-        <p style={{ color: '#aaa', fontSize: '0.95rem', lineHeight: '1.5' }}>
-          You are leaving OnlyCrave to visit an external destination:
-        </p>
-        
-        <div style={{ background: 'rgba(0, 0, 0, 0.3)', borderLeft: '4px solid #00d2ff', padding: '15px', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', color: '#00d2ff', wordBreak: 'break-all', textAlign: 'left', margin: '25px 0' }}>
-          {decodedUrl || 'Loading destination...'}
-        </div>
-
-        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
-          <button 
-            onClick={handleBack}
-            style={{ padding: '12px 25px', borderRadius: '50px', fontWeight: '700', cursor: 'pointer', border: '1px solid #444', background: '#222', color: 'white' }}
-          >
-            GO BACK
-          </button>
+      <div style={{ backgroundColor: '#0f0f19', color: 'white', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'sans-serif', margin: 0, padding: '20px' }}>
+        <main style={{ background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(15px)', WebkitBackdropFilter: 'blur(15px)', border: '1px solid rgba(0, 210, 255, 0.2)', borderRadius: '30px', padding: '40px', maxWidth: '450px', width: '100%', textAlign: 'center', boxShadow: '0 20px 50px rgba(0,0,0,0.5)' }}>
           
-          <a 
-            href={decodedUrl} 
-            style={{ padding: '12px 25px', borderRadius: '50px', fontWeight: '700', textDecoration: 'none', background: '#00d2ff', color: 'black', boxShadow: '0 4px 15px rgba(0, 210, 255, 0.3)' }}
-          >
-            PROCEED
-          </a>
-        </div>
+          <div style={{ fontSize: '3.5rem', marginBottom: '20px' }}>🛡️</div>
 
-        <p style={{ marginTop: '25px', color: '#666', fontSize: '0.75rem' }}>
-          Verify the URL above before proceeding. OnlyCrave is not responsible for content on external sites.
-        </p>
-      </main>
-    </div>
+          <h1 style={{ fontSize: '1.2rem', fontWeight: 'bold', textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '15px', color: '#fff' }}>
+            Security Intercept
+          </h1>
+          
+          <p style={{ color: '#aaa', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '20px' }}>
+            You are navigating to an external protocol. Review the destination:
+          </p>
+          
+          <div style={{ background: 'rgba(0, 0, 0, 0.4)', borderLeft: '4px solid #00d2ff', padding: '15px', borderRadius: '10px', fontFamily: 'monospace', fontSize: '0.85rem', color: '#00d2ff', wordBreak: 'break-all', textAlign: 'left', marginBottom: '30px' }}>
+            {decodedUrl || 'Validating URL...'}
+          </div>
+
+          <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+            <button 
+              onClick={handleBack}
+              type="button"
+              style={{ padding: '12px 25px', borderRadius: '50px', fontWeight: '700', cursor: 'pointer', border: '1px solid #444', background: '#222', color: 'white', transition: '0.2s' }}
+            >GO BACK
+            </button>
+            
+            <a 
+              href={decodedUrl || '#'} 
+              rel="noopener noreferrer"
+              style={{ padding: '12px 25px', borderRadius: '50px', fontWeight: '700', textDecoration: 'none', background: '#00d2ff', color: 'black', boxShadow: '0 4px 15px rgba(0, 210, 255, 0.3)', transition: '0.2s' }}
+            >PROCEED (Open Link)
+            </a>
+          </div>
+
+          <p style={{ marginTop: '30px', color: '#555', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px' }}>
+            OnlyCrave Security Protocol
+          </p>
+        </main>
+      </div>
+    </>
   );
 }
