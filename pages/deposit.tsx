@@ -9,17 +9,15 @@ export default function DepositPage() {
 
   // --- UI & Payment State ---
   const [amount, setAmount] = useState<string>('0');
-  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | null>(null);
+  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | null>(null);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [receiptMode, setReceiptMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState('');
 
-  // Sync amount from URL
   useEffect(() => {
     if (queryAmount) setAmount(queryAmount as string);
-    // Generate a random transaction ref for the receipt
     setTransactionId('OC-' + Math.random().toString(36).substr(2, 9).toUpperCase());
   }, [queryAmount]);
 
@@ -34,8 +32,7 @@ export default function DepositPage() {
         const res = await axios.post('/api/payments/mpesa', { amount, phone, username: 'Wallet_Deposit' });
         if (res.data.success) setReceiptMode(true);
       } else if (method === 'paypal') {
-        const paypalEmail = process.env.NEXT_PUBLIC_PAYPAL_EMAIL || 'africka@mail.com';
-        window.open(`https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${paypalEmail}&item_name=Wallet+Deposit&amount=${amount}&currency_code=USD`, '_blank');
+        window.open(`https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${process.env.NEXT_PUBLIC_PAYPAL_EMAIL || 'africka@mail.com'}&item_name=Wallet+Deposit&amount=${amount}&currency_code=USD`, '_blank');
         setReceiptMode(true);
       } else if (method === 'crypto') {
         const params = new URLSearchParams({
@@ -47,6 +44,10 @@ export default function DepositPage() {
         });
         window.open(`https://www.coinpayments.net/index.php?${params.toString()}`, '_blank');
         setReceiptMode(true);
+      } else if (method === 'patreon') {
+        // Redirecting to your custom Patreon bridge/checkout
+        window.open('https://trimd.cc/depositpatreononlycrave', '_blank');
+        setReceiptMode(true);
       }
     } catch (err: any) {
       setError(err.message || "Gateway error.");
@@ -56,70 +57,74 @@ export default function DepositPage() {
   };
 
   const ReceiptView = () => (
-    <div id="receipt" style={{ background: '#fff', color: '#000', padding: '30px', borderRadius: '20px', textAlign: 'center', border: '2px dashed #0102FD' }}>
-      <div style={{ fontSize: '24px', fontWeight: '900', color: '#0102FD', marginBottom: '10px' }}>ONLYCRAVE RECEIPT</div>
-      <p style={{ fontSize: '12px', color: '#666' }}>{new Date().toLocaleString()}</p>
-      <hr style={{ border: 'none', borderTop: '1px solid #eee', margin: '20px 0' }} />
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <span>Status:</span> <span style={{ fontWeight: 'bold', color: '#10b981' }}>PENDING VERIFICATION</span>
+    <div id="receipt" style={{ background: '#fff', color: '#000', padding: '30px', borderRadius: '25px', textAlign: 'center', border: '3px solid #0102FD' }}>
+      <div style={{ fontSize: '22px', fontWeight: '900', color: '#0102FD', marginBottom: '5px' }}>ONLYCRAVE</div>
+      <div style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '2px', color: '#888', marginBottom: '20px' }}>DEPOSIT VOUCHER</div>
+      
+      <div style={{ background: '#f8f9fa', padding: '15px', borderRadius: '15px', marginBottom: '20px' }}>
+        <div style={{ fontSize: '12px', color: '#666' }}>Amount Expected</div>
+        <div style={{ fontSize: '32px', fontWeight: '900' }}>${amount}</div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <span>Method:</span> <span style={{ fontWeight: 'bold' }}>{method?.toUpperCase()}</span>
+
+      <div style={{ textAlign: 'left', fontSize: '12px', lineHeight: '2' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Method:</span> <strong>{method?.toUpperCase()}</strong>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Ref ID:</span> <strong>{transactionId}</strong>
+        </div>
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <span>Status:</span> <span style={{ color: '#ff424d', fontWeight: 'bold' }}>WAITING FOR SCREENSHOT</span>
+        </div>
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px' }}>
-        <span>Reference:</span> <span style={{ fontWeight: 'bold' }}>{transactionId}</span>
+
+      <div style={{ marginTop: '25px', padding: '10px', background: '#fff9e6', border: '1px solid #ffeeba', borderRadius: '10px', fontSize: '11px', color: '#856404' }}>
+        ⚠️ <strong>Action Required:</strong> Take a screenshot of this page and the payment confirmation, then upload both to the wallet page.
       </div>
-      <div style={{ fontSize: '32px', fontWeight: '900', marginTop: '20px' }}>${amount}</div>
-      <p style={{ fontSize: '10px', color: '#888', marginTop: '20px' }}>Please screenshot this and upload it to your wallet page.</p>
     </div>
   );
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#050505', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', fontFamily: 'sans-serif' }}>
-      <Head><title>Secure Deposit Hub</title></Head>
+    <div style={{ minHeight: '100vh', backgroundColor: '#050505', color: '#fff', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+      <Head><title>Deposit Hub | OnlyCrave</title></Head>
 
-      <div style={{ width: '100%', maxWidth: '400px', background: 'rgba(255,255,255,0.03)', borderRadius: '35px', padding: '30px', border: '1px solid rgba(255,255,255,0.1)', textAlign: 'center' }}>
+      <div style={{ width: '100%', maxWidth: '420px', background: 'rgba(255,255,255,0.02)', backdropFilter: 'blur(20px)', borderRadius: '35px', padding: '30px', border: '1px solid rgba(255,255,255,0.08)', boxShadow: '0 25px 50px rgba(0,0,0,0.3)' }}>
         {!receiptMode ? (
           <>
-            <h1 style={{ fontSize: '18px', fontWeight: '900', letterSpacing: '1px', marginBottom: '20px' }}>SECURE DEPOSIT</h1>
+            <h1 style={{ fontSize: '16px', fontWeight: '800', letterSpacing: '2px', marginBottom: '30px', textAlign: 'center' }}>DEPOSIT INTERFACE</h1>
             
-            {error && <div style={{ color: '#ef4444', fontSize: '12px', marginBottom: '10px' }}>{error}</div>}
-
-            <div style={{ background: 'rgba(255,255,255,0.05)', padding: '20px', borderRadius: '24px', marginBottom: '20px' }}>
-              <span style={{ fontSize: '10px', color: '#888', fontWeight: 'bold' }}>DEPOSIT AMOUNT</span>
-              <div style={{ fontSize: '40px', fontWeight: '900', color: '#00d2ff' }}>${amount}</div>
+            <div style={{ background: 'linear-gradient(135deg, rgba(1, 2, 253, 0.1), rgba(0, 210, 255, 0.1))', padding: '25px', borderRadius: '24px', marginBottom: '25px', textAlign: 'center', border: '1px solid rgba(0, 210, 255, 0.2)' }}>
+              <span style={{ fontSize: '11px', color: '#00d2ff', fontWeight: 'bold', letterSpacing: '1px' }}>TOTAL TO DEPOSIT</span>
+              <div style={{ fontSize: '48px', fontWeight: '900', color: '#fff' }}>${amount}</div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-              <button onClick={() => setMethod('mpesa')} style={{ background: method === 'mpesa' ? '#0102FD' : '#222', border: 'none', borderRadius: '15px', color: '#fff', padding: '15px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>📱 MPESA</button>
-              <button onClick={() => setMethod('paypal')} style={{ background: method === 'paypal' ? '#0102FD' : '#222', border: 'none', borderRadius: '15px', color: '#fff', padding: '15px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>🅿️ PAYPAL</button>
-              <button onClick={() => setMethod('crypto')} style={{ background: method === 'crypto' ? '#0102FD' : '#222', border: 'none', borderRadius: '15px', color: '#fff', padding: '15px', cursor: 'pointer', fontSize: '10px', fontWeight: 'bold' }}>₿ CRYPTO</button>
+            <p style={{ fontSize: '11px', color: '#888', marginBottom: '15px', fontWeight: '600' }}>SELECT PAYMENT GATEWAY:</p>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '25px' }}>
+              <button onClick={() => setMethod('mpesa')} style={{ background: method === 'mpesa' ? '#0102FD' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>📱 M-PESA</button>
+              <button onClick={() => setMethod('patreon')} style={{ background: method === 'patreon' ? '#FF424D' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🎯 CARD/PAYPAL</button>
+              <button onClick={() => setMethod('paypal')} style={{ background: method === 'paypal' ? '#0070ba' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🅿️ PAYPAL DIR.</button>
+              <button onClick={() => setMethod('crypto')} style={{ background: method === 'crypto' ? '#f39c12' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>₿ CRYPTO</button>
             </div>
 
-            {method === 'mpesa' && (
-              <input 
-                placeholder="254..." 
-                value={phone} onChange={(e) => setPhone(e.target.value)} 
-                style={{ width: '100%', padding: '15px', borderRadius: '15px', marginBottom: '20px', background: '#000', border: '1px solid #333', color: '#fff' }} 
-              />
+            {method === 'patreon' && (
+              <div style={{ background: 'rgba(255, 66, 77, 0.1)', padding: '15px', borderRadius: '15px', fontSize: '12px', color: '#ff6b73', marginBottom: '20px', border: '1px solid rgba(255, 66, 77, 0.2)' }}>
+                ℹ️ <strong>Card/PayPal via Patreon:</strong> Best for International Cards. You will be redirected to Patreon to complete the secure checkout.
+              </div>
             )}
 
-            <button 
-              disabled={loading || !method}
-              onClick={handleDeposit}
-              style={{ width: '100%', padding: '20px', borderRadius: '18px', border: 'none', background: '#0102FD', color: '#fff', fontWeight: '900', cursor: 'pointer', opacity: loading ? 0.5 : 1 }}
-            >
-              {loading ? "COMMUNICATING..." : "INITIATE DEPOSIT"}
+            {method === 'mpesa' && (
+              <input placeholder="Phone: 254..." value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '15px', marginBottom: '20px', background: '#000', border: '1px solid #444', color: '#fff', fontSize: '16px' }} />
+            )}
+
+            <button disabled={loading || !method} onClick={handleDeposit} style={{ width: '100%', padding: '20px', borderRadius: '50px', border: 'none', background: method === 'patreon' ? '#FF424D' : '#0102FD', color: '#fff', fontWeight: '900', cursor: 'pointer', fontSize: '14px', boxShadow: '0 10px 20px rgba(0,0,0,0.4)' }}>
+              {loading ? "CONNECTING..." : `PAY $${amount} NOW ›`}
             </button>
           </>
         ) : (
           <>
             <ReceiptView />
-            <button 
-              onClick={() => window.close()}
-              style={{ width: '100%', marginTop: '20px', padding: '15px', borderRadius: '50px', background: 'transparent', border: '1px solid #444', color: '#888', fontWeight: 'bold', cursor: 'pointer' }}
-            >
-              DONE (CLOSE WINDOW)
+            <button onClick={() => window.close()} style={{ width: '100%', marginTop: '25px', padding: '18px', borderRadius: '50px', background: '#222', border: 'none', color: '#fff', fontWeight: 'bold', cursor: 'pointer' }}>
+              I HAVE SCREENSHOTTED THIS
             </button>
           </>
         )}
