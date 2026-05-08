@@ -14,7 +14,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
 
   // --- UI & Payment State ---
   const [amount, setAmount] = useState<string>('0');
-  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | null>(null);
+  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | 'stars' | null>(null);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [receiptMode, setReceiptMode] = useState(false);
@@ -50,6 +50,20 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
         });
         window.open(`https://www.coinpayments.net/index.php?${params.toString()}`, '_blank');
         setReceiptMode(true);
+        }
+       else if (method === 'stars') {
+            // Calculate stars (e.g., $1 = 50 stars)
+            const starAmount = Math.ceil(parseFloat(amount) * 50); 
+            const res = await axios.post('/api/payments/telegram-stars', { 
+                amount: starAmount, 
+                transactionId 
+            });
+
+            if (res.data.invoiceLink) {
+                window.open(res.data.invoiceLink, '_blank');
+                setReceiptMode(true);
+            }
+        }
       } else if (method === 'patreon') {
         window.open('https://trimd.cc/depositpatreononlycrave', '_blank');
         setReceiptMode(true);
@@ -133,6 +147,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
               <button onClick={() => setMethod('patreon')} style={{ background: method === 'patreon' ? '#FF424D' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🎯 CARD/PAYPAL</button>
               <button onClick={() => setMethod('paypal')} style={{ background: method === 'paypal' ? '#0070ba' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🅿️ PAYPAL DIR.</button>
               <button onClick={() => setMethod('crypto')} style={{ background: method === 'crypto' ? '#f39c12' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>₿ CRYPTO</button>
+              <button onClick={() => setMethod('stars')} style={{ background: method === 'stars' ? '#35A9F0' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}> ⭐️ TELEGRAM STARS</button>
             </div>
 
             {method === 'mpesa' && (
