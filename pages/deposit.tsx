@@ -26,7 +26,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
     setTransactionId('OC-' + Math.random().toString(36).substr(2, 9).toUpperCase());
   }, [queryAmount]);
 
-  const handleDeposit = async () => {
+const handleDeposit = async () => {
     setError(null);
     if (!method) { setError("Select a payment method."); return; }
     setLoading(true);
@@ -36,13 +36,15 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
         if (!phone.match(/^(254|0)(7|1)\d{8}$/)) throw new Error("Invalid M-Pesa number.");
         const res = await axios.post('/api/payments/mpesa', { amount, phone, username: 'Wallet_Deposit' });
         if (res.data.success) setReceiptMode(true);
-      } else if (method === 'paypal') {
+      } 
+      else if (method === 'paypal') {
         window.open(`https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${process.env.NEXT_PUBLIC_PAYPAL_EMAIL || 'africka@mail.com'}&item_name=Wallet+Deposit&amount=${amount}&currency_code=USD`, '_blank');
         setReceiptMode(true);
-      } else if (method === 'crypto') {
+      } 
+      else if (method === 'crypto') {
         const params = new URLSearchParams({
           cmd: '_pay_simple',
-          merchant: cpMerchantId, // Correctly using the prop from SSR
+          merchant: cpMerchantId,
           item_name: `Wallet Deposit`,
           amountf: amount,
           currency: 'USD',
@@ -50,21 +52,21 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
         });
         window.open(`https://www.coinpayments.net/index.php?${params.toString()}`, '_blank');
         setReceiptMode(true);
-        }
-       else if (method === 'stars') {
-            // Calculate stars (e.g., $1 = 50 stars)
-            const starAmount = Math.ceil(parseFloat(amount) * 50); 
-            const res = await axios.post('/api/payments/telegram-stars', { 
-                amount: starAmount, 
-                transactionId 
-            });
+      } 
+      else if (method === 'stars') {
+        // Calculate stars (e.g., $1 = 50 stars)
+        const starAmount = Math.ceil(parseFloat(amount) * 50); 
+        const res = await axios.post('/api/payments/telegram-stars', { 
+            amount: starAmount, 
+            transactionId 
+        });
 
-            if (res.data.invoiceLink) {
-                window.open(res.data.invoiceLink, '_blank');
-                setReceiptMode(true);
-            }
+        if (res.data.invoiceLink) {
+            window.open(res.data.invoiceLink, '_blank');
+            setReceiptMode(true);
         }
-      } else if (method === 'patreon') {
+      }
+      else if (method === 'patreon') {
         window.open('https://trimd.cc/depositpatreononlycrave', '_blank');
         setReceiptMode(true);
       }
@@ -74,6 +76,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
       setLoading(false);
     }
   };
+
 
   const handleDownload = () => {
     const receiptContent = `
