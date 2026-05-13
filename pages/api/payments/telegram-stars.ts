@@ -7,11 +7,11 @@ export default async function handler(req: any, res: any) {
   try {
     const telegramRes = await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/createInvoiceLink`, {
       title: "Premium Credits",
-      description: `Digital Access Credits Ref: ${transactionId}`,
-      payload: transactionId, // This is returned to you after payment
-      provider_token: "",     // Empty for Telegram Stars
-      currency: "XTR",        // XTR is the code for Stars
-      prices: [{ label: "Stars", amount: amount }] // amount is an integer
+      description: `Credits for premium digital content and creator interactions. Ref: ${transactionId}`,
+      payload: transactionId,
+      provider_token: "",
+      currency: "XTR", 
+      prices: [{ label: "Stars", amount: amount }]
     });
 
     res.status(200).json({ invoiceLink: telegramRes.data.result });
