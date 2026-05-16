@@ -19,7 +19,8 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
   // --- Payment State ---
   const [amount, setAmount] = useState<string>('10');
   const [localCurrency, setLocalCurrency] = useState({ code: 'KES', rate: 129.5, symbol: 'KSh' });
-  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'gpay' | null>(null);
+  // CHANGED: Added 'pesapal' into the acceptable method states
+  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'gpay' | 'pesapal' | null>(null);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -70,6 +71,17 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
         window.location.href = `https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=${paypalEmail}&item_name=Tip+for+${username}&amount=${amount}&currency_code=USD`;
       } else if (method === 'gpay') {
         throw new Error("Google Pay is currently in maintenance. Please use M-Pesa, PayPal or Crypto.");
+      } else if (method === 'pesapal') {
+        // CHANGED: Added call to backend API for PesaPal checkout token redirection
+        // PesaPal treats amounts natively by what currency you give it, so pass the dynamic local KES equivalent or standard amount
+        const targetAmount = (Number(amount) * localCurrency.rate).toFixed(2);
+        const res = await axios.post('/api/payments/pesapal', { amount: targetAmount, username });
+        
+        if (res.data.success && res.data.redirectUrl) {
+          window.location.href = res.data.redirectUrl;
+        } else {
+          throw new Error("Unable to link with PesaPal Gateway.");
+        }
       } else {
         const params = new URLSearchParams({
           cmd: '_pay_simple',
@@ -82,10 +94,10 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
         window.location.href = `https://www.coinpayments.net/index.php?${params.toString()}`;
       }
     } catch (err: any) {
-      setError(err.message || "Transaction failed.");
-      setLoading(false); // Only stop loading if there is an error
+      setError(err.response?.data?.message || err.message || "Transaction failed.");
+      setLoading(false); 
     } finally {
-      // For redirects (PayPal/Crypto), we keep loading active until the page changes
+      // For redirects, leave loading spinning unless there is a quick execution path
       if (method === 'mpesa' || error) {
         setLoading(false);
       }
@@ -200,8 +212,17 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
           </div>
         </div>
 
-        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', marginBottom: '20px'}}>
-            {[{id: 'mpesa', icon: '📱', label: 'MPESA'}, {id: 'paypal', icon: '🅿️', label: 'PAYPAL'}, {id: 'gpay', icon: '💳', label: 'G-PAY'}, {id: 'crypto', icon: '₿', label: 'CRYPTO'}].map(m => (
+        {/* CHANGED: Replaced grid structure layout to add PesaPal button item */}
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '8px', marginBottom: '10px'}}>
+            {[{id: 'mpesa', icon: '📱', label: 'MPESA'}, {id: 'paypal', icon: '🅿️', label: 'PAYPAL'}, {id: 'pesapal', icon: '🇰🇪', label: 'PESAPAL'}].map(m => (
+                <button key={m.id} onClick={() => {setMethod(m.id as any); setShowSuccess(false);}} style={styles.methodBtn(method === m.id)}>
+                    <span style={{fontSize: '18px'}}>{m.icon}</span>
+                    <span>{m.label}</span>
+                </button>
+            ))}
+        </div>
+        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '20px'}}>
+            {[{id: 'gpay', icon: '💳', label: 'G-PAY'}, {id: 'crypto', icon: '₿', label: 'CRYPTO'}].map(m => (
                 <button key={m.id} onClick={() => {setMethod(m.id as any); setShowSuccess(false);}} style={styles.methodBtn(method === m.id)}>
                     <span style={{fontSize: '18px'}}>{m.icon}</span>
                     <span>{m.label}</span>
@@ -224,6 +245,13 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
         {method === 'paypal' && (
             <div style={{...styles.alert, color: '#0102FD', background: 'rgba(1, 2, 253, 0.05)', border: '1px solid rgba(1, 2, 253, 0.1)'}}>
                 You will be redirected to PayPal to complete your donation.
+            </div>
+        )}
+
+        {/* CHANGED: Text alert status for redirection transparency with PesaPal */}
+        {method === 'pesapal' && (
+            <div style={{...styles.alert, color: '#10b981', background: 'rgba(16, 185, 129, 0.05)', border: '1px solid rgba(16, 185, 129, 0.1)'}}>
+                You will be redirected to PesaPal to finish payment (Card/M-Pesa/Airtel Money).
             </div>
         )}
 
