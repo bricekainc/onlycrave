@@ -89,7 +89,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Gateway error.");
-    } finaly {
+    } finally {
       setLoading(false);
     }
   };
