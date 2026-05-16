@@ -14,7 +14,8 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
 
   // --- UI & Payment State ---
   const [amount, setAmount] = useState<string>('0');
-  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | 'stars' | null>(null);
+  // UPDATED: Added 'pesapal' to the accepted method unions
+  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | 'stars' | 'pesapal' | null>(null);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [receiptMode, setReceiptMode] = useState(false);
@@ -26,7 +27,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
     setTransactionId('OC-' + Math.random().toString(36).substr(2, 9).toUpperCase());
   }, [queryAmount]);
 
-const handleDeposit = async () => {
+  const handleDeposit = async () => {
     setError(null);
     if (!method) { setError("Select a payment method."); return; }
     setLoading(true);
@@ -54,7 +55,6 @@ const handleDeposit = async () => {
         setReceiptMode(true);
       } 
       else if (method === 'stars') {
-        // Calculate stars (e.g., $1 = 50 stars)
         const starAmount = Math.ceil(parseFloat(amount) * 50); 
         const res = await axios.post('/api/payments/telegram-stars', { 
             amount: starAmount, 
@@ -70,13 +70,29 @@ const handleDeposit = async () => {
         window.open('https://trimd.cc/depositpatreononlycrave', '_blank');
         setReceiptMode(true);
       }
+      // NEW: Added handling branch logic for the secure PesaPal backend service 
+      else if (method === 'pesapal') {
+        // Exchange conversion setup (assuming ~130 KES baseline, adjust if dynamic rates are globally active)
+        const kesAmount = (parseFloat(amount) * 130).toFixed(2);
+        
+        const res = await axios.post('/api/payments/pesapal', { 
+          amount: kesAmount, 
+          username: 'Wallet_Deposit' 
+        });
+        
+        if (res.data.success && res.data.redirectUrl) {
+          window.open(res.data.redirectUrl, '_blank');
+          setReceiptMode(true);
+        } else {
+          throw new Error("Unable to link with PesaPal Gateway.");
+        }
+      }
     } catch (err: any) {
-      setError(err.message || "Gateway error.");
-    } finally {
+      setError(err.response?.data?.message || err.message || "Gateway error.");
+    } finaly {
       setLoading(false);
     }
   };
-
 
   const handleDownload = () => {
     const receiptContent = `
@@ -122,7 +138,7 @@ const handleDeposit = async () => {
         <strong>FINAL STEPS:</strong><br/>
         1. Take a screenshot of this receipt.<br/>
         2. Go to <a href="https://onlycrave.com/my/wallet" target="_blank" style={{color: '#0102FD', fontWeight: 'bold'}}>Wallet Page</a>.<br/>
-        3. Enter <b>${amount}</b>, click Manual, and upload the screenshot.<br/>
+        3. Enter <b>{amount}</b>, click Manual, and upload the screenshot.<br/>
         4. Click "Add Funds" and wait 5-10 mins.
       </div>
     </div>
@@ -145,8 +161,11 @@ const handleDeposit = async () => {
             </div>
 
             <p style={{ fontSize: '11px', color: '#888', marginBottom: '15px', fontWeight: '600' }}>SELECT PAYMENT GATEWAY:</p>
+            
+            {/* UPDATED: Converted layout into a clean 2-column list to accommodate 6 total action buttons evenly */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '25px' }}>
               <button onClick={() => setMethod('mpesa')} style={{ background: method === 'mpesa' ? '#0102FD' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>📱 M-PESA</button>
+              <button onClick={() => setMethod('pesapal')} style={{ background: method === 'pesapal' ? '#10b981' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🇰🇪 PESAPAL</button>
               <button onClick={() => setMethod('patreon')} style={{ background: method === 'patreon' ? '#FF424D' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🎯 CARD/PAYPAL</button>
               <button onClick={() => setMethod('paypal')} style={{ background: method === 'paypal' ? '#0070ba' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🅿️ PAYPAL DIR.</button>
               <button onClick={() => setMethod('crypto')} style={{ background: method === 'crypto' ? '#f39c12' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>₿ CRYPTO</button>
@@ -157,7 +176,23 @@ const handleDeposit = async () => {
               <input placeholder="Phone: 254..." value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '15px', marginBottom: '20px', background: '#000', border: '1px solid #444', color: '#fff', fontSize: '16px' }} />
             )}
 
-            <button disabled={loading || !method} onClick={handleDeposit} style={{ width: '100%', padding: '20px', borderRadius: '50px', border: 'none', background: method === 'patreon' ? '#FF424D' : '#0102FD', color: '#fff', fontWeight: '900', cursor: 'pointer', fontSize: '14px', boxShadow: '0 10px 20px rgba(0,0,0,0.4)' }}>
+            <button 
+              disabled={loading || !method} 
+              onClick={handleDeposit} 
+              style={{ 
+                width: '100%', 
+                padding: '20px', 
+                borderRadius: '50px', 
+                border: 'none', 
+                background: method === 'patreon' ? '#FF424D' : method === 'pesapal' ? '#10b981' : '#0102FD', 
+                color: '#fff', 
+                fontWeight: '900', 
+                cursor: 'pointer', 
+                fontSize: '14px', 
+                boxShadow: '0 10px 20px rgba(0,0,0,0.4)',
+                opacity: (loading || !method) ? 0.6 : 1 
+              }}
+            >
               {loading ? "CONNECTING..." : `PAY $${amount} NOW ›`}
             </button>
           </>
