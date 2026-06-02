@@ -8,59 +8,177 @@ interface DepositPageProps {
   cpMerchantId: string;
 }
 
-const BITPAY_WALLETS = {
+type PaymentMethod = 'mpesa' | 'crypto' | 'paypal' | 'patreon' | 'stars' | 'bitpay' | null;
+
+type BitpayCurrencyKey = 'btc' | 'ton' | 'usdt_trc20' | 'usdt_erc20';
+
+type BitpayTransactionMethod = 'bank_transfer' | 'debit_card' | 'credit_card' | 'paypal' | 'other';
+
+const BITPAY_ASSETS: Record<BitpayCurrencyKey, {
+  label: string;
+  crypto_currency: string;
+  crypto_chain: string;
+  crypto_address: string;
+}> = {
   btc: {
+    label: 'BTC',
     crypto_currency: 'btc',
     crypto_chain: 'btc',
     crypto_address: '1MaiRgdYHRFChiTm2aRCm1LDn9iAjSbiTi',
   },
   ton: {
+    label: 'TON',
     crypto_currency: 'ton',
     crypto_chain: 'ton',
     crypto_address: 'UQAEqcYmBcyKQmGHYJdckUOgeerIB6FOrcAli4fq47eLkYPx',
   },
   usdt_trc20: {
+    label: 'USDT TRC20',
     crypto_currency: 'usdt',
     crypto_chain: 'trx',
     crypto_address: 'TFmk9jML8GMy2Wau3EfYJdo2YcKeuYncgD',
   },
-  usdt_etc: {
+  usdt_erc20: {
+    label: 'USDT ERC20',
     crypto_currency: 'usdt',
-    crypto_chain: 'etc',
+    crypto_chain: 'eth',
     crypto_address: '0xe42a3721d20da6e73f4f9457396dca98a0b30d43',
   },
-} as const;
+};
+
+const BITPAY_METHODS: Record<BitpayTransactionMethod, string> = {
+  bank_transfer: 'Bank Transfer',
+  debit_card: 'Debit Card',
+  credit_card: 'Credit Card',
+  paypal: 'PayPal',
+  other: 'Mobile Money / Other',
+};
 
 export default function DepositPage({ cpMerchantId }: DepositPageProps) {
   const router = useRouter();
   const { amount: queryAmount } = router.query;
 
+  // --- UI & Payment State ---
   const [amount, setAmount] = useState<string>('0');
-  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | 'stars' | 'bitpay' | null>(null);
+  const [method, setMethod] = useState<PaymentMethod>(null);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [receiptMode, setReceiptMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState('');
 
+  // --- BitPay State ---
+  const [bitpayCurrency, setBitpayCurrency] = useState<BitpayCurrencyKey>('btc');
+  const [bitpayMethod, setBitpayMethod] = useState<BitpayTransactionMethod>('other');
+
   useEffect(() => {
     if (queryAmount) setAmount(queryAmount as string);
     setTransactionId('OC-' + Math.random().toString(36).substr(2, 9).toUpperCase());
   }, [queryAmount]);
 
-  const openBitPay = () => {
-    const wallet = BITPAY_WALLETS.btc;
+  const Icon3D = ({ type }: { type: 'phone' | 'bitpay' | 'card' | 'paypal' | 'bitcoin' | 'star' | 'download' | 'upload' }) => {
+    const base: React.CSSProperties = {
+      width: '28px',
+      height: '28px',
+      borderRadius: '10px',
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      marginRight: '8px',
+      position: 'relative',
+      boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.35), 0 8px 16px rgba(0,0,0,0.35)',
+      flexShrink: 0,
+    };
+
+    const text: React.CSSProperties = {
+      fontSize: '14px',
+      fontWeight: 900,
+      color: '#fff',
+      lineHeight: 1,
+      textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+    };
+
+    const map: Record<string, React.CSSProperties> = {
+      phone: { background: 'linear-gradient(145deg, #22c55e, #064e3b)' },
+      bitpay: { background: 'linear-gradient(145deg, #60a5fa, #1d4ed8)' },
+      card: { background: 'linear-gradient(145deg, #fb7185, #be123c)' },
+      paypal: { background: 'linear-gradient(145deg, #38bdf8, #075985)' },
+      bitcoin: { background: 'linear-gradient(145deg, #fbbf24, #b45309)' },
+      star: { background: 'linear-gradient(145deg, #7dd3fc, #0284c7)' },
+      download: { background: 'linear-gradient(145deg, #e5e7eb, #6b7280)' },
+      upload: { background: 'linear-gradient(145deg, #818cf8, #0102FD)' },
+    };
+
+    const label: Record<string, string> = {
+      phone: 'M',
+      bitpay: 'BP',
+      card: '$',
+      paypal: 'P',
+      bitcoin: 'B',
+      star: 'T',
+      download: '↓',
+      upload: '↑',
+    };
+
+    return (
+      <span style={{ ...base, ...map[type] }}>
+        <span style={text}>{label[type]}</span>
+      </span>
+    );
+  };
+
+  const GatewayButton = ({
+    active,
+    onClick,
+    color,
+    icon,
+    children,
+  }: {
+    active: boolean;
+    onClick: () => void;
+    color: string;
+    icon: 'phone' | 'bitpay' | 'card' | 'paypal' | 'bitcoin' | 'star';
+    children: React.ReactNode;
+  }) => (
+    <button
+      onClick={onClick}
+      style={{
+        background: active ? color : '#111',
+        border: '1px solid #333',
+        borderRadius: '16px',
+        color: '#fff',
+        padding: '14px 12px',
+        cursor: 'pointer',
+        fontWeight: 'bold',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '62px',
+      }}
+    >
+      <Icon3D type={icon} />
+      <span>{children}</span>
+    </button>
+  );
+
+  const buildBitpayUrl = () => {
+    const selectedAsset = BITPAY_ASSETS[bitpayCurrency];
 
     const params = new URLSearchParams({
       fiat_currency: 'usd',
-      transaction_method: 'other',
+      transaction_method: bitpayMethod,
       fiat_amount: amount,
-      crypto_currency: wallet.crypto_currency,
-      crypto_chain: wallet.crypto_chain,
-      crypto_address: wallet.crypto_address,
+      crypto_currency: selectedAsset.crypto_currency,
+      crypto_chain: selectedAsset.crypto_chain,
+      crypto_address: selectedAsset.crypto_address,
     });
 
-    window.open(`https://bitpay.com/crypto-widget/buy/transaction-method?${params.toString()}`, '_blank');
+    const baseUrl =
+      bitpayMethod === 'other'
+        ? 'https://bitpay.com/crypto-widget/buy/transaction-method'
+        : 'https://bitpay.com/crypto-widget/buy';
+
+    return `${baseUrl}?${params.toString()}`;
   };
 
   const handleDeposit = async () => {
@@ -93,13 +211,13 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
       else if (method === 'stars') {
         const starAmount = Math.ceil(parseFloat(amount) * 50); 
         const res = await axios.post('/api/payments/telegram-stars', { 
-          amount: starAmount, 
-          transactionId 
+            amount: starAmount, 
+            transactionId 
         });
 
         if (res.data.invoiceLink) {
-          window.open(res.data.invoiceLink, '_blank');
-          setReceiptMode(true);
+            window.open(res.data.invoiceLink, '_blank');
+            setReceiptMode(true);
         }
       }
       else if (method === 'patreon') {
@@ -107,7 +225,8 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
         setReceiptMode(true);
       }
       else if (method === 'bitpay') {
-        openBitPay();
+        if (!amount || parseFloat(amount) <= 0) throw new Error("Invalid deposit amount.");
+        window.open(buildBitpayUrl(), '_blank');
         setReceiptMode(true);
       }
     } catch (err: any) {
@@ -186,18 +305,65 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
             <p style={{ fontSize: '11px', color: '#888', marginBottom: '15px', fontWeight: '600' }}>SELECT PAYMENT GATEWAY:</p>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '25px' }}>
-              <button onClick={() => setMethod('mpesa')} style={{ background: method === 'mpesa' ? '#0102FD' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>📱 M-PESA</button>
+              <GatewayButton active={method === 'mpesa'} onClick={() => setMethod('mpesa')} color="#0102FD" icon="phone">
+                M-PESA
+              </GatewayButton>
 
-              <button onClick={() => setMethod('bitpay')} style={{ background: method === 'bitpay' ? '#0f766e' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🏦 CARD/BANK</button>
+              <GatewayButton active={method === 'bitpay'} onClick={() => setMethod('bitpay')} color="#2563eb" icon="bitpay">
+                BITPAY
+              </GatewayButton>
 
-              <button onClick={() => setMethod('patreon')} style={{ background: method === 'patreon' ? '#FF424D' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🎯 CARD/PAYPAL</button>
-              <button onClick={() => setMethod('paypal')} style={{ background: method === 'paypal' ? '#0070ba' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🅿️ PAYPAL DIR.</button>
-              <button onClick={() => setMethod('crypto')} style={{ background: method === 'crypto' ? '#f39c12' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>₿ CRYPTO</button>
-              <button onClick={() => setMethod('stars')} style={{ background: method === 'stars' ? '#35A9F0' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}> ⭐️ TELEGRAM STARS</button>
+              <GatewayButton active={method === 'patreon'} onClick={() => setMethod('patreon')} color="#FF424D" icon="card">
+                CARD/PAYPAL
+              </GatewayButton>
+
+              <GatewayButton active={method === 'paypal'} onClick={() => setMethod('paypal')} color="#0070ba" icon="paypal">
+                PAYPAL DIR.
+              </GatewayButton>
+
+              <GatewayButton active={method === 'crypto'} onClick={() => setMethod('crypto')} color="#f39c12" icon="bitcoin">
+                CRYPTO
+              </GatewayButton>
+
+              <GatewayButton active={method === 'stars'} onClick={() => setMethod('stars')} color="#35A9F0" icon="star">
+                TELEGRAM STARS
+              </GatewayButton>
             </div>
 
             {method === 'mpesa' && (
               <input placeholder="Phone: 254..." value={phone} onChange={(e) => setPhone(e.target.value)} style={{ width: '100%', padding: '18px', borderRadius: '15px', marginBottom: '20px', background: '#000', border: '1px solid #444', color: '#fff', fontSize: '16px' }} />
+            )}
+
+            {method === 'bitpay' && (
+              <div style={{ background: '#090909', border: '1px solid #333', borderRadius: '18px', padding: '15px', marginBottom: '20px' }}>
+                <label style={{ display: 'block', fontSize: '11px', color: '#888', fontWeight: 700, marginBottom: '8px' }}>
+                  BITPAY ASSET
+                </label>
+
+                <select
+                  value={bitpayCurrency}
+                  onChange={(e) => setBitpayCurrency(e.target.value as BitpayCurrencyKey)}
+                  style={{ width: '100%', padding: '14px', borderRadius: '12px', background: '#000', border: '1px solid #444', color: '#fff', marginBottom: '12px', fontWeight: 700 }}
+                >
+                  {Object.entries(BITPAY_ASSETS).map(([key, asset]) => (
+                    <option key={key} value={key}>{asset.label}</option>
+                  ))}
+                </select>
+
+                <label style={{ display: 'block', fontSize: '11px', color: '#888', fontWeight: 700, marginBottom: '8px' }}>
+                  PAYMENT OPTION
+                </label>
+
+                <select
+                  value={bitpayMethod}
+                  onChange={(e) => setBitpayMethod(e.target.value as BitpayTransactionMethod)}
+                  style={{ width: '100%', padding: '14px', borderRadius: '12px', background: '#000', border: '1px solid #444', color: '#fff', fontWeight: 700 }}
+                >
+                  {Object.entries(BITPAY_METHODS).map(([key, label]) => (
+                    <option key={key} value={key}>{label}</option>
+                  ))}
+                </select>
+              </div>
             )}
 
             <button 
@@ -208,7 +374,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
                 padding: '20px', 
                 borderRadius: '50px', 
                 border: 'none', 
-                background: method === 'patreon' ? '#FF424D' : method === 'bitpay' ? '#0f766e' : '#0102FD', 
+                background: method === 'patreon' ? '#FF424D' : method === 'bitpay' ? '#2563eb' : '#0102FD', 
                 color: '#fff', 
                 fontWeight: '900', 
                 cursor: 'pointer', 
@@ -223,16 +389,14 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
         ) : (
           <>
             <ReceiptView />
-
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' }}>
-              <button onClick={handleDownload} style={{ padding: '15px', borderRadius: '50px', background: '#fff', color: '#000', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                💾 DOWNLOAD
+              <button onClick={handleDownload} style={{ padding: '15px', borderRadius: '50px', background: '#fff', color: '#000', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon3D type="download" /> DOWNLOAD
               </button>
-              <button onClick={() => window.open('https://onlycrave.com/my/wallet', '_blank')} style={{ padding: '15px', borderRadius: '50px', background: '#0102FD', color: '#fff', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
-                🚀 UPLOAD NOW
+              <button onClick={() => window.open('https://onlycrave.com/my/wallet', '_blank')} style={{ padding: '15px', borderRadius: '50px', background: '#0102FD', color: '#fff', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <Icon3D type="upload" /> UPLOAD NOW
               </button>
             </div>
-
             <button onClick={() => window.close()} style={{ width: '100%', marginTop: '15px', padding: '15px', background: 'transparent', border: '1px solid #444', color: '#888', borderRadius: '50px', cursor: 'pointer', fontSize: '11px' }}>
               CLOSE INTERFACE
             </button>
