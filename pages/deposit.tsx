@@ -8,14 +8,35 @@ interface DepositPageProps {
   cpMerchantId: string;
 }
 
+const BITPAY_WALLETS = {
+  btc: {
+    crypto_currency: 'btc',
+    crypto_chain: 'btc',
+    crypto_address: '1MaiRgdYHRFChiTm2aRCm1LDn9iAjSbiTi',
+  },
+  ton: {
+    crypto_currency: 'ton',
+    crypto_chain: 'ton',
+    crypto_address: 'UQAEqcYmBcyKQmGHYJdckUOgeerIB6FOrcAli4fq47eLkYPx',
+  },
+  usdt_trc20: {
+    crypto_currency: 'usdt',
+    crypto_chain: 'trx',
+    crypto_address: 'TFmk9jML8GMy2Wau3EfYJdo2YcKeuYncgD',
+  },
+  usdt_etc: {
+    crypto_currency: 'usdt',
+    crypto_chain: 'etc',
+    crypto_address: '0xe42a3721d20da6e73f4f9457396dca98a0b30d43',
+  },
+} as const;
+
 export default function DepositPage({ cpMerchantId }: DepositPageProps) {
   const router = useRouter();
   const { amount: queryAmount } = router.query;
 
-  // --- UI & Payment State ---
   const [amount, setAmount] = useState<string>('0');
-  // UPDATED: Added 'pesapal' to the accepted method unions
-  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | 'stars' | 'pesapal' | null>(null);
+  const [method, setMethod] = useState<'mpesa' | 'crypto' | 'paypal' | 'patreon' | 'stars' | 'bitpay' | null>(null);
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [receiptMode, setReceiptMode] = useState(false);
@@ -26,6 +47,21 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
     if (queryAmount) setAmount(queryAmount as string);
     setTransactionId('OC-' + Math.random().toString(36).substr(2, 9).toUpperCase());
   }, [queryAmount]);
+
+  const openBitPay = () => {
+    const wallet = BITPAY_WALLETS.btc;
+
+    const params = new URLSearchParams({
+      fiat_currency: 'usd',
+      transaction_method: 'other',
+      fiat_amount: amount,
+      crypto_currency: wallet.crypto_currency,
+      crypto_chain: wallet.crypto_chain,
+      crypto_address: wallet.crypto_address,
+    });
+
+    window.open(`https://bitpay.com/crypto-widget/buy/transaction-method?${params.toString()}`, '_blank');
+  };
 
   const handleDeposit = async () => {
     setError(null);
@@ -57,35 +93,22 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
       else if (method === 'stars') {
         const starAmount = Math.ceil(parseFloat(amount) * 50); 
         const res = await axios.post('/api/payments/telegram-stars', { 
-            amount: starAmount, 
-            transactionId 
+          amount: starAmount, 
+          transactionId 
         });
 
         if (res.data.invoiceLink) {
-            window.open(res.data.invoiceLink, '_blank');
-            setReceiptMode(true);
+          window.open(res.data.invoiceLink, '_blank');
+          setReceiptMode(true);
         }
       }
       else if (method === 'patreon') {
         window.open('https://trimd.cc/depositpatreononlycrave', '_blank');
         setReceiptMode(true);
       }
-      // NEW: Added handling branch logic for the secure PesaPal backend service 
-      else if (method === 'pesapal') {
-        // Exchange conversion setup (assuming ~130 KES baseline, adjust if dynamic rates are globally active)
-        const kesAmount = (parseFloat(amount) * 130).toFixed(2);
-        
-        const res = await axios.post('/api/payments/pesapal', { 
-          amount: kesAmount, 
-          username: 'Wallet_Deposit' 
-        });
-        
-        if (res.data.success && res.data.redirectUrl) {
-          window.open(res.data.redirectUrl, '_blank');
-          setReceiptMode(true);
-        } else {
-          throw new Error("Unable to link with PesaPal Gateway.");
-        }
+      else if (method === 'bitpay') {
+        openBitPay();
+        setReceiptMode(true);
       }
     } catch (err: any) {
       setError(err.response?.data?.message || err.message || "Gateway error.");
@@ -162,10 +185,11 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
 
             <p style={{ fontSize: '11px', color: '#888', marginBottom: '15px', fontWeight: '600' }}>SELECT PAYMENT GATEWAY:</p>
             
-            {/* UPDATED: Converted layout into a clean 2-column list to accommodate 6 total action buttons evenly */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '25px' }}>
               <button onClick={() => setMethod('mpesa')} style={{ background: method === 'mpesa' ? '#0102FD' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>📱 M-PESA</button>
-              <button onClick={() => setMethod('pesapal')} style={{ background: method === 'pesapal' ? '#10b981' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🇰🇪 PESAPAL</button>
+
+              <button onClick={() => setMethod('bitpay')} style={{ background: method === 'bitpay' ? '#0f766e' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🏦 CARD/BANK</button>
+
               <button onClick={() => setMethod('patreon')} style={{ background: method === 'patreon' ? '#FF424D' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🎯 CARD/PAYPAL</button>
               <button onClick={() => setMethod('paypal')} style={{ background: method === 'paypal' ? '#0070ba' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>🅿️ PAYPAL DIR.</button>
               <button onClick={() => setMethod('crypto')} style={{ background: method === 'crypto' ? '#f39c12' : '#111', border: '1px solid #333', borderRadius: '16px', color: '#fff', padding: '15px', cursor: 'pointer', fontWeight: 'bold' }}>₿ CRYPTO</button>
@@ -184,7 +208,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
                 padding: '20px', 
                 borderRadius: '50px', 
                 border: 'none', 
-                background: method === 'patreon' ? '#FF424D' : method === 'pesapal' ? '#10b981' : '#0102FD', 
+                background: method === 'patreon' ? '#FF424D' : method === 'bitpay' ? '#0f766e' : '#0102FD', 
                 color: '#fff', 
                 fontWeight: '900', 
                 cursor: 'pointer', 
@@ -199,6 +223,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
         ) : (
           <>
             <ReceiptView />
+
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '20px' }}>
               <button onClick={handleDownload} style={{ padding: '15px', borderRadius: '50px', background: '#fff', color: '#000', border: 'none', fontWeight: 'bold', cursor: 'pointer', fontSize: '12px' }}>
                 💾 DOWNLOAD
@@ -207,6 +232,7 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
                 🚀 UPLOAD NOW
               </button>
             </div>
+
             <button onClick={() => window.close()} style={{ width: '100%', marginTop: '15px', padding: '15px', background: 'transparent', border: '1px solid #444', color: '#888', borderRadius: '50px', cursor: 'pointer', fontSize: '11px' }}>
               CLOSE INTERFACE
             </button>
