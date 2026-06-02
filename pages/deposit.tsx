@@ -14,6 +14,8 @@ type BitpayCurrencyKey = 'btc' | 'ton' | 'usdt_trc20' | 'usdt_erc20';
 
 type BitpayTransactionMethod = 'bank_transfer' | 'debit_card' | 'credit_card' | 'paypal' | 'other';
 
+const BITPAY_MINIMUM_AMOUNT = 50;
+
 const BITPAY_ASSETS: Record<BitpayCurrencyKey, {
   label: string;
   crypto_currency: string;
@@ -58,7 +60,6 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
   const router = useRouter();
   const { amount: queryAmount } = router.query;
 
-  // --- UI & Payment State ---
   const [amount, setAmount] = useState<string>('0');
   const [method, setMethod] = useState<PaymentMethod>(null);
   const [phone, setPhone] = useState('');
@@ -67,9 +68,11 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
   const [error, setError] = useState<string | null>(null);
   const [transactionId, setTransactionId] = useState('');
 
-  // --- BitPay State ---
   const [bitpayCurrency, setBitpayCurrency] = useState<BitpayCurrencyKey>('btc');
   const [bitpayMethod, setBitpayMethod] = useState<BitpayTransactionMethod>('other');
+
+  const numericAmount = parseFloat(amount || '0');
+  const bitpayAmountTooLow = method === 'bitpay' && numericAmount < BITPAY_MINIMUM_AMOUNT;
 
   useEffect(() => {
     if (queryAmount) setAmount(queryAmount as string);
@@ -225,7 +228,10 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
         setReceiptMode(true);
       }
       else if (method === 'bitpay') {
-        if (!amount || parseFloat(amount) <= 0) throw new Error("Invalid deposit amount.");
+        if (!amount || numericAmount < BITPAY_MINIMUM_AMOUNT) {
+          throw new Error(`BitPay requires a minimum deposit of $${BITPAY_MINIMUM_AMOUNT}.`);
+        }
+
         window.open(buildBitpayUrl(), '_blank');
         setReceiptMode(true);
       }
@@ -363,11 +369,28 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
                     <option key={key} value={key}>{label}</option>
                   ))}
                 </select>
+
+                {bitpayAmountTooLow && (
+                  <div
+                    style={{
+                      background: 'rgba(239,68,68,0.1)',
+                      border: '1px solid rgba(239,68,68,0.3)',
+                      color: '#ef4444',
+                      padding: '12px',
+                      borderRadius: '12px',
+                      marginTop: '12px',
+                      fontSize: '12px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    BitPay requires a minimum deposit of $50.
+                  </div>
+                )}
               </div>
             )}
 
             <button 
-              disabled={loading || !method} 
+              disabled={loading || !method || bitpayAmountTooLow} 
               onClick={handleDeposit} 
               style={{ 
                 width: '100%', 
@@ -377,10 +400,10 @@ export default function DepositPage({ cpMerchantId }: DepositPageProps) {
                 background: method === 'patreon' ? '#FF424D' : method === 'bitpay' ? '#2563eb' : '#0102FD', 
                 color: '#fff', 
                 fontWeight: '900', 
-                cursor: 'pointer', 
+                cursor: loading || !method || bitpayAmountTooLow ? 'not-allowed' : 'pointer', 
                 fontSize: '14px', 
                 boxShadow: '0 10px 20px rgba(0,0,0,0.4)',
-                opacity: (loading || !method) ? 0.6 : 1 
+                opacity: (loading || !method || bitpayAmountTooLow) ? 0.6 : 1 
               }}
             >
               {loading ? "CONNECTING..." : `PAY $${amount} NOW ›`}
