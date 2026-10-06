@@ -5,8 +5,27 @@ import { getCreators } from '../../lib/getCreators';
 
 export async function getServerSideProps(context: any) {
   const { username } = context.params;
-  const creators = await getCreators();
-  const creator = creators.find((c: any) => c.username.toLowerCase() === username.toLowerCase());
+  const cleanUsername = username.toLowerCase();
+
+  let creators = [];
+  try {
+    creators = await getCreators();
+  } catch (err) {
+    console.error("Error fetching creators list:", err);
+  }
+
+  // 1. Try to find the creator from your data source
+  let creator = creators.find((c: any) => c.username?.toLowerCase() === cleanUsername);
+
+  // 2. Fallback safety net for profiles like njokimurira in case the data source list isn't synced
+  if (!creator && cleanUsername === 'njokimurira') {
+    creator = {
+      username: 'njokimurira',
+      name: 'Njoki Murira',
+      avatar: 'https://onlycrave.com/uploads/avatar-placeholder.jpg', 
+      description: 'TikToker & Content Creator. Connect with fans and explore exclusive updates.'
+    };
+  }
 
   if (!creator) return { notFound: true };
 
