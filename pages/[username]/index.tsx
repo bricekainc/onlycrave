@@ -14,20 +14,20 @@ export async function getServerSideProps(context: any) {
     console.error("Error fetching creators list:", err);
   }
 
-  // 1. Try to find the creator from your data source
+  // Find creator dynamically from your data source
   let creator = creators.find((c: any) => c.username?.toLowerCase() === cleanUsername);
 
-  // 2. Fallback safety net for profiles like njokimurira in case the data source list isn't synced
-  if (!creator && cleanUsername === 'njokimurira') {
+  // If not found in the list, dynamically mirror/generate a clean fallback object 
+  // so every single valid username works instantly without throwing a 404.
+  if (!creator) {
+    const formattedName = username.charAt(0).toUpperCase() + username.slice(1);
     creator = {
-      username: 'njokimurira',
-      name: 'Njoki Murira',
-      avatar: 'https://onlycrave.com/uploads/avatar-placeholder.jpg', 
-      description: 'TikToker & Content Creator. Connect with fans and explore exclusive updates.'
+      username: cleanUsername,
+      name: formattedName,
+      avatar: `https://onlycrave.com/uploads/avatars/${cleanUsername}.jpg`,
+      description: `Explore ${formattedName}'s official OnlyCrave profile. Discover exclusive media updates and direct community access.`
     };
   }
-
-  if (!creator) return { notFound: true };
 
   return { props: { creator } };
 }
@@ -37,7 +37,8 @@ export default function CreatorProfile({ creator }: { creator: any }) {
   const [mounted, setMounted] = useState(false);
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
   const [showAgeGate, setShowAgeGate] = useState(false);
-  const [targetAction, setTargetAction] = useState<'subscribe' | 'tip'>('subscribe');
+  const [targetAction, setTargetAction] = useState<'subscribe' | 'tip' | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -63,18 +64,35 @@ export default function CreatorProfile({ creator }: { creator: any }) {
     muted: resolvedTheme === 'dark' ? '#888' : '#666',
   };
 
-  const handleActionClick = (action: 'subscribe' | 'tip') => {
-    setTargetAction(action);
-    setShowAgeGate(true);
-  };
-
-  const handleAgeVerify = (isOfAge: boolean) => {
-    if (isOfAge) {
-      if (targetAction === 'subscribe') {
+  const executeRedirect = (action: 'subscribe' | 'tip') => {
+    setIsLoading(true);
+    setTimeout(() => {
+      if (action === 'subscribe') {
         window.location.href = `https://onlycrave.com/${creator.username}`;
       } else {
         window.location.href = `https://your.onlycrave.com/${creator.username}/tip`;
       }
+    }, 600);
+  };
+
+  const handleActionClick = (action: 'subscribe' | 'tip') => {
+    setTargetAction(action);
+    
+    const verifiedTimestamp = localStorage.getItem('crave_age_verified');
+    const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+
+    if (verifiedTimestamp && Date.now() - parseInt(verifiedTimestamp, 10) < thirtyDaysInMs) {
+      executeRedirect(action);
+    } else {
+      setShowAgeGate(true);
+    }
+  };
+
+  const handleAgeVerify = (isOfAge: boolean) => {
+    if (isOfAge && targetAction) {
+      localStorage.setItem('crave_age_verified', Date.now().toString());
+      setShowAgeGate(false);
+      executeRedirect(targetAction);
     } else {
       window.location.href = "https://onlycrave.com";
     }
@@ -96,91 +114,106 @@ export default function CreatorProfile({ creator }: { creator: any }) {
   };
 
   return (
-    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', fontFamily: "'Inter', sans-serif", transition: '0.3s' }}>
+    <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', fontFamily: "'Inter', sans-serif", transition: '0.3s', overflowX: 'hidden' }}>
       <Head>
         <title>{creator.name} (@{creator.username}) - Official OnlyCrave Profile</title>
         <meta name="description" content={`Explore ${creator.name}'s official OnlyCrave profile. Subscribe or send a tip securely.`} />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta property="og:title" content={`${creator.name} (@{creator.username}) | OnlyCrave`} />
         <meta property="og:image" content={creator.avatar} />
         <meta property="og:type" content="profile" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
-      <main style={{ maxWidth: '800px', margin: '0 auto', padding: '40px 20px' }}>
+      <main style={{ maxWidth: '700px', margin: '0 auto', padding: 'clamp(20px, 5vw, 40px) clamp(15px, 4vw, 20px)' }}>
         {/* Navigation */}
-        <nav style={{ marginBottom: '40px' }}>
+        <nav style={{ marginBottom: 'clamp(25px, 5vw, 40px)' }}>
           <button 
             onClick={() => router.push('/')} 
-            style={{ background: 'none', border: 'none', color: theme.secondary, cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', fontSize: '0.8rem' }}
+            style={{ background: 'none', border: 'none', color: theme.secondary, cursor: 'pointer', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '8px', textTransform: 'uppercase', fontSize: '0.75rem' }}
           >
-            ← BACK TO ONLYCRAVE DIRECTORY
+            ← BACK TO DIRECTORY
           </button>
         </nav>
 
         {/* Profile Header */}
-        <header style={{ textAlign: 'center', marginBottom: '50px', position: 'relative' }}>
+        <header style={{ textAlign: 'center', marginBottom: 'clamp(30px, 6vw, 50px)', position: 'relative' }}>
           <div style={{ position: 'relative', display: 'inline-block' }}>
             <img 
               src={creator.avatar} 
               alt={`${creator.name} profile avatar`}
+              onError={(e: any) => {
+                // Fallback mirror if avatar image link fails to load
+                e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=16161a&color=e33cc7&size=200&bold=true`;
+              }}
               style={{ 
-                width: '160px', height: '160px', borderRadius: '50%', objectFit: 'cover', 
-                border: `4px solid ${theme.primary}`,
-                boxShadow: `0 20px 40px ${theme.primary + '33'}`
+                width: 'clamp(120px, 25vw, 150px)', height: 'clamp(120px, 25vw, 150px)', borderRadius: '50%', objectFit: 'cover', 
+                border: `3px solid ${theme.primary}`,
+                boxShadow: `0 15px 30px ${theme.primary + '33'}`
               }} 
             />
-            <div style={{ position: 'absolute', bottom: '10px', right: '10px', backgroundColor: theme.secondary, color: '#000', borderRadius: '50%', width: '30px', height: '30px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', border: `3px solid ${theme.bg}` }}>✓</div>
+            <div style={{ position: 'absolute', bottom: '5px', right: '5px', backgroundColor: theme.secondary, color: '#000', borderRadius: '50%', width: '26px', height: '26px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.8rem', border: `2px solid ${theme.bg}` }}>✓</div>
           </div>
-          <h1 style={{ fontSize: '2.8rem', fontWeight: '950', marginTop: '25px', marginBottom: '5px', letterSpacing: '-1px' }}>{creator.name}</h1>
-          <p style={{ color: theme.primary, fontSize: '1.2rem', fontWeight: '700' }}>@{creator.username}</p>
+          <h1 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', fontWeight: '900', marginTop: '20px', marginBottom: '4px', letterSpacing: '-0.5px' }}>{creator.name}</h1>
+          <p style={{ color: theme.primary, fontSize: 'clamp(1rem, 3vw, 1.1rem)', fontWeight: '700' }}>@{creator.username}</p>
         </header>
 
         {/* Bio Section */}
-        <section style={{ backgroundColor: theme.card, padding: '30px', borderRadius: '24px', border: `1px solid ${theme.border}`, marginBottom: '30px' }}>
-          <h2 style={{ fontSize: '1rem', marginBottom: '12px', color: theme.secondary, textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 900 }}>About {creator.name}</h2>
-          <p style={{ lineHeight: '1.8', opacity: 0.8, fontSize: '1.05rem' }}>{creator.description}</p>
+        <section style={{ backgroundColor: theme.card, padding: 'clamp(20px, 4vw, 25px)', borderRadius: '20px', border: `1px solid ${theme.border}`, marginBottom: '24px' }}>
+          <h2 style={{ fontSize: '0.85rem', marginBottom: '10px', color: theme.secondary, textTransform: 'uppercase', letterSpacing: '1.5px', fontWeight: 900 }}>About {creator.name}</h2>
+          <p style={{ lineHeight: '1.7', opacity: 0.8, fontSize: 'clamp(0.95rem, 2.5vw, 1rem)' }}>{creator.description}</p>
         </section>
 
         {/* CTA CARD WITH BOTH BUTTONS */}
         <section style={{ 
           backgroundColor: theme.card, 
-          padding: '40px', 
-          borderRadius: '30px', 
+          padding: 'clamp(25px, 5vw, 35px)', 
+          borderRadius: '24px', 
           border: `2px solid ${theme.blue}`, 
           position: 'relative', 
           overflow: 'hidden'
         }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, padding: '8px 20px', background: theme.blue, color: '#fff', fontSize: '0.7rem', fontWeight: 900, borderBottomLeftRadius: '20px' }}>
-            SECURE ENCRYPTED HUB
+          <div style={{ position: 'absolute', top: 0, right: 0, padding: '6px 16px', background: theme.blue, color: '#fff', fontSize: '0.65rem', fontWeight: 900, borderBottomLeftRadius: '16px' }}>
+            SECURE HUB
           </div>
           
-          <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '25px' }}>
+          <h2 style={{ fontSize: 'clamp(1.4rem, 4vw, 1.6rem)', fontWeight: 900, marginBottom: '20px' }}>
             Connect with {creator.name}
           </h2>
           
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {/* Subscribe Button */}
             <button 
               onClick={() => handleActionClick('subscribe')}
+              disabled={isLoading}
               style={{ 
-                width: '100%', padding: '22px', borderRadius: '18px', border: 'none', 
+                width: '100%', padding: '18px', borderRadius: '16px', border: 'none', 
                 background: `linear-gradient(135deg, ${theme.blue} 0%, ${theme.primary} 100%)`, 
-                color: '#fff', fontWeight: '900', fontSize: '1.2rem', cursor: 'pointer', 
-                boxShadow: '0 10px 25px rgba(1, 2, 253, 0.3)', transition: 'transform 0.2s' 
+                color: '#fff', fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', 
+                boxShadow: '0 8px 20px rgba(1, 2, 253, 0.25)', transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
               }}
             >
-              SUBSCRIBE
+              {isLoading && targetAction === 'subscribe' ? (
+                <span style={{ width: '20px', height: '20px', border: '3px solid #fff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              ) : 'SUBSCRIBE'}
             </button>
 
+            {/* Tip Button */}
             <button 
               onClick={() => handleActionClick('tip')}
+              disabled={isLoading}
               style={{ 
-                width: '100%', padding: '22px', borderRadius: '18px', border: `2px solid ${theme.secondary}`, 
+                width: '100%', padding: '18px', borderRadius: '16px', border: `2px solid ${theme.secondary}`, 
                 background: 'transparent', 
-                color: theme.text, fontWeight: '900', fontSize: '1.2rem', cursor: 'pointer', 
-                transition: 'all 0.2s' 
+                color: theme.text, fontWeight: '900', fontSize: '1.1rem', cursor: 'pointer', 
+                transition: 'all 0.2s',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
               }}
             >
-              TIP
+              {isLoading && targetAction === 'tip' ? (
+                <span style={{ width: '20px', height: '20px', border: `3px solid ${theme.text}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+              ) : 'TIP'}
             </button>
           </div>
         </section>
@@ -188,21 +221,29 @@ export default function CreatorProfile({ creator }: { creator: any }) {
 
       {/* --- AGE VERIFICATION MODAL --- */}
       {showAgeGate && (
-        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(15px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
-          <div style={{ backgroundColor: theme.card, padding: '40px', borderRadius: '32px', maxWidth: '450px', width: '100%', textAlign: 'center', border: `2px solid ${theme.primary}` }}>
-            <h2 style={{ color: theme.primary, fontSize: '2rem', fontWeight: 900 }}>AGE VERIFICATION</h2>
-            <p style={{ margin: '20px 0 40px', opacity: 0.8, lineHeight: '1.6' }}>Please confirm that you are at least 18 years of age to proceed.</p>
-            <div style={{ display: 'flex', gap: '15px' }}>
-              <button onClick={() => handleAgeVerify(false)} style={{ flex: 1, padding: '20px', borderRadius: '15px', background: 'transparent', border: `1px solid ${theme.border}`, color: theme.text, fontWeight: '700', cursor: 'pointer' }}>EXIT</button>
-              <button onClick={() => handleAgeVerify(true)} style={{ flex: 1, padding: '20px', borderRadius: '15px', background: theme.primary, border: 'none', color: '#fff', fontWeight: '900', cursor: 'pointer' }}>I AM 18+</button>
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(12px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '15px' }}>
+          <div style={{ backgroundColor: theme.card, padding: 'clamp(25px, 5vw, 35px)', borderRadius: '24px', maxWidth: '400px', width: '100%', textAlign: 'center', border: `2px solid ${theme.primary}` }}>
+            <h2 style={{ color: theme.primary, fontSize: 'clamp(1.5rem, 4vw, 1.8rem)', fontWeight: 900 }}>AGE VERIFICATION</h2>
+            <p style={{ margin: '15px 0 30px', opacity: 0.8, lineHeight: '1.6', fontSize: '0.95rem' }}>Please confirm that you are at least 18 years of age to proceed. This will be remembered for 30 days.</p>
+            <div style={{ display: 'flex', gap: '12px' }}>
+              <button onClick={() => handleAgeVerify(false)} style={{ flex: 1, padding: '16px', borderRadius: '14px', background: 'transparent', border: `1px solid ${theme.border}`, color: theme.text, fontWeight: '700', cursor: 'pointer', fontSize: '0.9rem' }}>EXIT</button>
+              <button onClick={() => handleAgeVerify(true)} style={{ flex: 1, padding: '16px', borderRadius: '14px', background: theme.primary, border: 'none', color: '#fff', fontWeight: '900', cursor: 'pointer', fontSize: '0.9rem' }}>I AM 18+</button>
             </div>
           </div>
         </div>
       )}
 
-      <footer style={{ textAlign: 'center', padding: '60px 20px', opacity: 0.4, fontSize: '0.7rem', fontWeight: 800, letterSpacing: '2px' }}>
+      <footer style={{ textAlign: 'center', padding: '40px 20px', opacity: 0.4, fontSize: '0.65rem', fontWeight: 800, letterSpacing: '1.5px' }}>
         ONLYCRAVE DIRECTORY // {new Date().getFullYear()}
       </footer>
+
+      {/* Global CSS for Spinner Animation */}
+      <style jsx global>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
