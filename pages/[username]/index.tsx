@@ -1,31 +1,71 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { getCreators } from '../../lib/getCreators';
 
 export async function getServerSideProps(context: any) {
   const { username } = context.params;
   const cleanUsername = username.toLowerCase();
 
-  let creators = [];
+  let creator: any = null;
+
   try {
-    creators = await getCreators();
+    // Fetch the real-time RSS feed from onlycrave.com
+    const res = await fetch('https://onlycrave.com/rss/creators/feed');
+    const xmlText = await res.text();
+
+    // Simple robust regex parsing to extract individual <item> blocks from the XML feed
+    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+    let match;
+
+    while ((match = itemRegex.exec(xmlText)) !== null) {
+      const itemContent = match[1];
+
+      // Extract Link to match username
+      const linkMatch = itemContent.exec ? null : itemContent.match(/<link>(.*?)<\/link>/);
+      const profileLink = linkMatch ? linkMatch[1].trim() : '';
+      
+      // Check if this item corresponds to the requested username
+      if (profileLink.toLowerCase().endsWith(`/${cleanUsername}`)) {
+        // Extract Title (Format: Name (@username) or similar)
+        const titleMatch = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || itemContent.match(/<title>(.*?)<\/title>/);
+        const rawTitle = titleMatch ? titleMatch[1] : cleanUsername;
+        
+        // Clean up title to get display name (remove handles if nested inside)
+        const nameParts = rawTitle.split('(@');
+        const name = nameParts[0].trim() || cleanUsername;
+
+        // Extract Description
+        const descMatch = itemContent.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) || itemContent.match(/<description>([\s\S]*?)<\/description>/);
+        let description = descMatch ? descMatch[1].trim() : `Explore ${name}'s official OnlyCrave profile.`;
+        
+        // Strip HTML tags from description text for clean rendering
+        description = description.replace(/<[^>]*>?/gm, '').trim();
+
+        // Extract Thumbnail / Avatar
+        const thumbMatch = itemContent.match(/<media:thumbnail[^>]+url="(.*?)"/) || itemContent.match(/<media:content[^>]+url="(.*?)"/);
+        const avatar = thumbMatch ? thumbMatch[1].trim() : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=16161a&color=e33cc7&size=200&bold=true`;
+
+        creator = {
+          username: cleanUsername,
+          name,
+          avatar,
+          description
+        };
+        break;
+      }
+    }
   } catch (err) {
-    console.error("Error fetching creators list:", err);
+    console.error("Error fetching creator from RSS feed:", err);
   }
 
-  // Find creator dynamically from your data source
-  let creator = creators.find((c: any) => c.username?.toLowerCase() === cleanUsername);
-
-  // If not found in the list, dynamically mirror/generate a clean fallback object 
-  // so every single valid username works instantly without throwing a 404.
+  // Fallback dynamic mirror if the creator wasn't found inside the live RSS feed items
   if (!creator) {
     const formattedName = username.charAt(0).toUpperCase() + username.slice(1);
     creator = {
       username: cleanUsername,
       name: formattedName,
-      avatar: `https://onlycrave.com/uploads/avatars/${cleanUsername}.jpg`,
-      description: `Explore ${formattedName}'s official OnlyCrave profile. Discover exclusive media updates and direct community access.`
+      avatar: `https://onlycrave.com/public/uploads/avatar/${cleanUsername}.jpg`,
+      description: `Welcome to ${formattedName}'s official OnlyCrave profile. Discover exclusive media updates and direct community access.`
     };
   }
 
@@ -143,7 +183,6 @@ export default function CreatorProfile({ creator }: { creator: any }) {
               src={creator.avatar} 
               alt={`${creator.name} profile avatar`}
               onError={(e: any) => {
-                // Fallback mirror if avatar image link fails to load
                 e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=16161a&color=e33cc7&size=200&bold=true`;
               }}
               style={{ 
