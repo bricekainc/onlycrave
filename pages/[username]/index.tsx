@@ -5,64 +5,55 @@ import Head from 'next/head';
 export async function getServerSideProps(context: any) {
   const { username } = context.params;
   const cleanUsername = username.toLowerCase();
+  const targetUrl = `https://onlycrave.com/${cleanUsername}`;
 
-  let creator: any = null;
+  // Default fallback metadata
+  let creator = {
+    username: cleanUsername,
+    name: username.charAt(0).toUpperCase() + username.slice(1),
+    avatar: `https://onlycrave.com/public/uploads/avatar/${cleanUsername}.jpg`,
+    description: `Welcome to my private world ✨ Explore exclusive content and unreleased updates.`
+  };
 
   try {
-    const res = await fetch('https://onlycrave.com/rss/creators/feed');
-    const xmlText = await res.text();
-
-    const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-    let match;
-
-    while ((match = itemRegex.exec(xmlText)) !== null) {
-      const itemContent = match[1];
-
-      const linkMatch = itemContent.match(/<link>(.*?)<\/link>/);
-      const profileLink = linkMatch ? linkMatch[1].trim() : '';
-      
-      if (profileLink.toLowerCase().endsWith(`/${cleanUsername}`)) {
-        const titleMatch = itemContent.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || itemContent.match(/<title>(.*?)<\/title>/);
-        const rawTitle = titleMatch ? titleMatch[1] : cleanUsername;
-        
-        const nameParts = rawTitle.split('(@');
-        const name = nameParts[0].trim() || cleanUsername;
-
-        const descMatch = itemContent.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/) || itemContent.match(/<description>([\s\S]*?)<\/description>/);
-        let description = descMatch ? descMatch[1].trim() : `Welcome to my private world ✨ Explore exclusive content and unreleased updates.`;
-        
-        description = description.replace(/<[^>]*>?/gm, '').trim();
-
-        const thumbMatch = itemContent.match(/<media:thumbnail[^>]+url="(.*?)"/) || itemContent.match(/<media:content[^>]+url="(.*?)"/);
-        const avatar = thumbMatch ? thumbMatch[1].trim() : `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=16161a&color=e33cc7&size=250&bold=true`;
-
-        creator = {
-          username: cleanUsername,
-          name,
-          avatar,
-          description
-        };
-        break;
-      }
+    // Fetch the target page to mirror its exact SEO tags and info
+    const res = await fetch(targetUrl, { 
+      headers: { 'User-Agent': 'Cloudflare-Worker-SEO-Bot' } 
+    });
+    const text = await res.text();
+    
+    // Extract Metadata using regex matching
+    const tMatch = text.match(/<title>([^<]*)<\/title>/i);
+    const dMatch = text.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i);
+    const ogImageMatch = text.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']*)["']/i);
+    const ogTitleMatch = text.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']*)["']/i);
+    
+    if (ogImageMatch && ogImageMatch[1]) {
+      creator.avatar = ogImageMatch[1].trim();
     }
-  } catch (err) {
-    console.error("Error fetching creator from RSS feed:", err);
+
+    if (dMatch && dMatch[1]) {
+      creator.description = dMatch[1].trim();
+    }
+
+    if (ogTitleMatch && ogTitleMatch[1]) {
+      const rawTitle = ogTitleMatch[1].trim();
+      const nameParts = rawTitle.split('(@');
+      creator.name = nameParts[0].trim() || creator.name;
+    } else if (tMatch && tMatch[1]) {
+      const rawTitle = tMatch[1].trim();
+      const nameParts = rawTitle.split('(@');
+      creator.name = nameParts[0].trim() || creator.name;
+    }
+
+  } catch (e) {
+    console.log("Metadata mirror failed, using default fallback profile details");
   }
 
-  if (!creator) {
-    const formattedName = username.charAt(0).toUpperCase() + username.slice(1);
-    creator = {
-      username: cleanUsername,
-      name: formattedName,
-      avatar: `https://onlycrave.com/public/uploads/avatar/${cleanUsername}.jpg`,
-      description: `Welcome to my private world ✨ Exclusive photos, live streams, and direct chats you won't see anywhere else.`
-    };
-  }
-
-  return { props: { creator } };
+  return { props: { creator, targetUrl } };
 }
 
-export default function CreatorLinkBio({ creator }: { creator: any }) {
+export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, targetUrl: string }) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [activeButton, setActiveButton] = useState<string | null>(null);
@@ -89,7 +80,7 @@ export default function CreatorLinkBio({ creator }: { creator: any }) {
       "alternateName": creator.username,
       "image": creator.avatar,
       "description": creator.description,
-      "url": `https://onlycrave.com/${creator.username}`
+      "url": targetUrl
     }
   };
 
@@ -103,13 +94,14 @@ export default function CreatorLinkBio({ creator }: { creator: any }) {
       overflowX: 'hidden',
       display: 'flex',
       flexDirection: 'column',
-      justify-content: 'space-between'
+      justifyContent: 'space-between'
     }}>
       <Head>
         <title>{creator.name} (@{creator.username}) | Link in Bio</title>
-        <meta name="description" content={`Check out ${creator.name}'s exclusive links, VIP feeds, and custom requests.`} />
+        <meta name="description" content={creator.description} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta property="og:title" content={`${creator.name} (@{creator.username})`} />
+        <meta property="og:description" content={creator.description} />
         <meta property="og:image" content={creator.avatar} />
         <meta property="og:type" content="profile" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -181,9 +173,9 @@ export default function CreatorLinkBio({ creator }: { creator: any }) {
         {/* LINK-IN-BIO ACTION BUTTONS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
           
-          {/* Primary Subscribe Button (Pulsing / Gradient) */}
+          {/* Primary Subscribe Button */}
           <button 
-            onClick={() => handleRedirect(`https://onlycrave.com/${creator.username}`, 'subscribe')}
+            onClick={() => handleRedirect(targetUrl, 'subscribe')}
             style={{ 
               width: '100%', padding: '18px 20px', borderRadius: '16px', border: 'none', 
               background: 'linear-gradient(135deg, #0102FD 0%, #e33cc7 100%)', 
@@ -222,7 +214,7 @@ export default function CreatorLinkBio({ creator }: { creator: any }) {
 
           {/* Direct Chat / DM Button */}
           <button 
-            onClick={() => handleRedirect(`https://onlycrave.com/${creator.username}`, 'chat')}
+            onClick={() => handleRedirect(targetUrl, 'chat')}
             style={{ 
               width: '100%', padding: '16px 20px', borderRadius: '16px', 
               border: '1px solid rgba(255, 255, 255, 0.1)', 
