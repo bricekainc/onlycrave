@@ -68,72 +68,57 @@ export default async function handler(
       }
     };
 
-    // Helper to extract meta tag content using regex
-    const getMeta = (prop: string) => {
-      const regex = new RegExp(`<meta\\s+(?:property|name)=["']${prop}["']\\s+content=["']([^"']*)["']`, "i");
-      const match = html.match(regex);
-      if (match && match[1]) return match[1].trim();
+    // Helper to extract meta tag content using regex (handles multiple tags by matching all or specific attributes)
+    const getMetaContent = (property: string) => {
+      const regex = new RegExp(`<meta\\s+(?:property|name)=["']${property}["']\\s+content=["']([^"']*)["']`, "gi");
+      const matches = [...html.matchAll(regex)];
+      if (matches.length > 0) {
+        // Return the last or most specific one (e.g. user upload avatar over default svg)
+        for (const match of matches.reverse()) {
+          if (match[1] && !match[1].includes("home_index.svg")) {
+            return match[1].trim();
+          }
+        }
+        return matches[0][1].trim();
+      }
       
-      const reverseRegex = new RegExp(`<meta\\s+content=["']([^"']*)["']\\s+(?:property|name)=["']${prop}["']`, "i");
-      const reverseMatch = html.match(reverseRegex);
-      return reverseMatch && reverseMatch[1] ? reverseMatch[1].trim() : "";
+      const reverseRegex = new RegExp(`<meta\\s+content=["']([^"']*)["']\\s+(?:property|name)=["']${property}["']`, "gi");
+      const reverseMatches = [...html.matchAll(reverseRegex)];
+      if (reverseMatches.length > 0) {
+        return reverseMatches[reverseMatches.length - 1][1].trim();
+      }
+      return "";
     };
 
-    // Helper to extract a tag attribute or inner text using regex
-    const getAttrByClass = (className: string, attr: string) => {
-      const regex = new RegExp(`<[^>]+class=["'][^"']*\\b${className}\\b[^"']*["'][^>]*${attr}=["']([^"']*)["']`, "i");
+    const getTagText = (tagName: string) => {
+      const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i");
       const match = html.match(regex);
-      return match ? match[1] : "";
+      return match ? match[1].replace(/<[^>]*>/g, "").trim() : "";
     };
 
-    const getTextByClass = (className: string) => {
-      const regex = new RegExp(`<[^>]+class=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`, "i");
-      const match = html.match(regex);
-      if (!match) return "";
-      // Strip inner tags to get plain text
-      return match[1].replace(/<[^>]*>/g, "").trim();
-    };
+    // Extract fields based on target site meta structure
+    const avatar = getMetaContent("og:image") || getMetaContent("twitter:image") || "";
+    
+    // Title from og:site_name or fallback to <title>
+    const siteName = getMetaContent("og:site_name");
+    const rawTitle = getTagText("title");
+    const name = siteName || rawTitle.split("-")[0].trim() || getMetaContent("twitter:title");
 
-    const avatar =
-      getAttrByClass("avatarUser", "src") ||
-      getMeta("og:image") ||
-      getMeta("twitter:image") ||
-      "";
+    // Username derived from path (e.g. /njokimurira -> njokimurira)
+    const pathSegments = parsedUrl.pathname.split("/").filter(Boolean);
+    const username = pathSegments[pathSegments.length - 1] || "";
 
-    const coverStyleRegex = /<[^>]+class=["'][^"']*jumbotron-cover-user[^"']*["'][^>]*style=["']([^"']*)["']/i;
-    const coverStyleMatch = html.match(coverStyleRegex);
-    const coverStyle = coverStyleMatch ? coverStyleMatch[1] : "";
-
-    const coverMatch = coverStyle.match(/url\(\s*['"]?(.*?)['"]?\s*\)/i);
-
-    const cover =
-      coverMatch?.[1] ||
-      getAttrByClass("jumbotron-cover-user", "src") ||
-      "";
-
-    const name =
-      getTextByClass("media-body") ||
-      getMeta("og:title");
-
-    const usernameMatch = html.match(/<small[^>]+class=["'][^"']*text-muted[^"']*["'][^>]*>([\s\S]*?)<\/small>/i);
-    const username = usernameMatch ? usernameMatch[1].replace(/<[^>]*>/g, "").trim() : "";
-
-    const bioMatch = html.match(/<div[^>]+class=["'][^"']*media-body[^"']*["'][^>]*>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/i);
-    const bio = bioMatch ? bioMatch[1].replace(/<[^>]*>/g, "").trim() : "";
-
-    const descMatch = html.match(/<[^>]+itemprop=["']description["'][^>]*>([\s\S]*?)<\/[^>]+>/i);
-    const story =
-      (descMatch ? descMatch[1].replace(/<[^>]*>/g, "").trim() : "") ||
-      getMeta("og:description");
+    // Bio and Story from og:description
+    const description = getMetaContent("og:description") || getMetaContent("twitter:description") || "";
 
     const profile: Profile = {
       url: parsedUrl.toString(),
       name,
-      username,
+      username: username ? `@${username}` : "",
       avatar: absoluteUrl(avatar),
-      cover: absoluteUrl(cover),
-      bio,
-      story,
+      cover: "", // Can be filled if cover meta exists
+      bio: description,
+      story: description,
     };
 
     return res.status(200).json(profile);
