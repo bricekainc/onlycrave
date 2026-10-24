@@ -1,332 +1,176 @@
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
-import Head from 'next/head';
 
 export async function getServerSideProps(context: any) {
-  const { username } = context.params;
-  const cleanUsername = Array.isArray(username) ? username[0].toLowerCase() : username.toLowerCase();
-  const targetUrl = `https://onlycrave.com/${cleanUsername}`;
+  const rawUsername = context.params?.username;
 
-  // Start with empty values — we will fill them from the live page source.
-  // No more generic "Welcome to my private world..." placeholder text.
-  let creator = {
-    username: cleanUsername,
-    name: '',
-    avatar: '',
-    description: ''
+  if (
+    typeof rawUsername !== "string" ||
+    !rawUsername.trim()
+  ) {
+    return { notFound: true };
+  }
+
+  const username = rawUsername.trim().toLowerCase();
+  const targetUrl = `https://onlycrave.com/${encodeURIComponent(username)}`;
+
+  const response = await fetch(targetUrl, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+      Accept: "text/html,application/xhtml+xml",
+    },
+    signal: AbortSignal.timeout(15000),
+  }).catch((error) => {
+    console.error("OnlyCrave request failed:", error);
+    throw new Error(`Could not fetch OnlyCrave profile: ${username}`);
+  });
+
+  if (response.status === 404) {
+    return { notFound: true };
+  }
+
+  if (!response.ok) {
+    throw new Error(
+      `OnlyCrave returned HTTP ${response.status} for ${username}`
+    );
+  }
+
+  const html = await response.text();
+
+  // Decode HTML entities without adding any placeholder values.
+  const decodeHtml = (value: string): string =>
+    value
+      .replace(/&amp;/gi, "&")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;|&apos;/gi, "'")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&#(\d+);/g, (_, code) =>
+        String.fromCodePoint(Number(code))
+      )
+      .replace(/&#x([0-9a-f]+);/gi, (_, code) =>
+        String.fromCodePoint(parseInt(code, 16))
+      )
+      .trim();
+
+  // Read an HTML tag attribute regardless of attribute order.
+  const getAttribute = (
+    tag: string,
+    attribute: string
+  ): string | null => {
+    const escapedAttribute = attribute.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    );
+
+    const match = tag.match(
+      new RegExp(
+        `\\b${escapedAttribute}\\s*=\\s*(?:"([^"]*)"|'([^']*)'|([^\\s>]+))`,
+        "i"
+      )
+    );
+
+    const value = match?.[1] ?? match?.[2] ?? match?.[3];
+
+    return value ? decodeHtml(value) : null;
   };
 
-  try {
-    const res = await fetch(targetUrl, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
-      signal: AbortSignal.timeout(10000)
-    });
+  // Extract a meta tag by its name/property key.
+  const getMeta = (key: string): string | null => {
+    const tags = html.match(/<meta\b[^>]*>/gi) ?? [];
 
-    if (res.ok) {
-      const text = await res.text();
+    for (const tag of tags) {
+      const name = getAttribute(tag, "name");
+      const property = getAttribute(tag, "property");
 
-      // Return the LAST matching <meta> tag value.
-      // OnlyCrave pages declare many meta tags twice: first a generic
-      // brand-wide version near the top of <head>, then a profile-specific
-      // version further down. We want the profile-specific one, so we walk
-      // every match and keep the last.
-      const getMetaContent = (propName: string, attrName: string = 'property') => {
-        const forward = new RegExp(
-          `<meta\\s+[^>]*${attrName}=["']${propName}["'][^>]*content=["']([^"']*)["']`,
-          'gi'
-        );
-        const reverse = new RegExp(
-          `<meta\\s+[^>]*content=["']([^"']*)["'][^>]*${attrName}=["']${propName}["']`,
-          'gi'
-        );
-        let last: string | null = null;
-        let m: RegExpExecArray | null;
-        while ((m = forward.exec(text)) !== null) last = m[1];
-        while ((m = reverse.exec(text)) !== null) last = m[1];
-        return last ? last.trim() : '';
-      };
+      if (
+        (name?.toLowerCase() === key.toLowerCase() ||
+          property?.toLowerCase() === key.toLowerCase())
+      ) {
+        const content = getAttribute(tag, "content");
 
-      // Pull the inner text of <title>…</title> as a final fallback for the name.
-      const getTitleTag = (): string => {
-        const m = text.match(/<title[^>]*>([^<]+)<\/title>/i);
-        return m ? m[1].trim() : '';
-      };
-
-      // Strip the trailing brand suffix (e.g. " - Onlycrave", " | Onlycrave",
-      // " - Onlycrave - Connect with Fans. Earn with Content.") without
-      // touching hyphens that legitimately appear inside a display name
-      // (e.g. "Mary-Jane").
-      const stripBrandSuffix = (s: string): string =>
-        s.replace(/\s*[-–—|]\s*Onlycrave.*$/i, '').replace(/^Onlycrave\s*[-–—|]\s*/i, '').trim();
-
-      // ---- AVATAR -------------------------------------------------------
-      // Prefer twitter:image (the real uploaded avatar). The page also emits
-      // a generic og:image pointing to home_index.svg — we explicitly skip
-      // that so we never display the placeholder logo as the profile photo.
-      const twitterImage = getMetaContent('twitter:image', 'name');
-      const ogImage = getMetaContent('og:image', 'property');
-      const candidateAvatar = twitterImage || ogImage || '';
-      if (candidateAvatar && !candidateAvatar.includes('home_index.svg')) {
-        creator.avatar = candidateAvatar.startsWith('http')
-          ? candidateAvatar
-          : `https://onlycrave.com${candidateAvatar}`;
+        if (content) return content;
       }
-
-      // ---- BIO / DESCRIPTION -------------------------------------------
-      // twitter:description on these profiles is the clean bio text
-      // (e.g. "A bad ass with a good ass."). Some other meta tags prepend
-      // "username - " to the same text, so we strip that prefix if present.
-      const twitterDesc = getMetaContent('twitter:description', 'name');
-      const ogDesc = getMetaContent('og:description', 'property');
-      const metaDesc = getMetaContent('description', 'name');
-      const candidateDesc = twitterDesc || ogDesc || metaDesc || '';
-      if (candidateDesc) {
-        creator.description = candidateDesc.replace(
-          new RegExp(`^${cleanUsername}\\s*[-–—|]\\s*`, 'i'),
-          ''
-        ).trim();
-      }
-
-      // ---- NAME ---------------------------------------------------------
-      // Priority: twitter:title (already clean, e.g. "Njoki Murira")
-      //          -> og:site_name (e.g. "Njoki Murira - Onlycrave")
-      //          -> og:title    (e.g. "Njoki Murira - Onlycrave")
-      //          -> <title>     (e.g. "Njoki Murira - Onlycrave - Connect…")
-      // The last three need the brand suffix stripped.
-      const twitterTitle = getMetaContent('twitter:title', 'name');
-      const ogSiteName = getMetaContent('og:site_name', 'property');
-      const ogTitle = getMetaContent('og:title', 'property');
-      const titleTag = getTitleTag();
-
-      const candidateName =
-        twitterTitle ||
-        stripBrandSuffix(ogSiteName) ||
-        stripBrandSuffix(ogTitle) ||
-        stripBrandSuffix(titleTag);
-
-      if (candidateName) creator.name = candidateName;
     }
-  } catch (e) {
-    console.error('Metadata mirror failed, using fallback details');
-  }
 
-  // Last-resort fallbacks — only kick in if the live page gave us nothing.
-  if (!creator.name) creator.name = cleanUsername;
-  if (!creator.avatar) {
-    creator.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=16161a&color=e33cc7&size=250&bold=true`;
-  }
-  if (!creator.description) {
-    creator.description = `Subscribe to @${cleanUsername} on Onlycrave for exclusive content, posts, and direct messages.`;
-  }
-
-  return { props: { creator, targetUrl } };
-}
-
-export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, targetUrl: string }) {
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [activeButton, setActiveButton] = useState<string | null>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return <div style={{ background: '#030305', minHeight: '100vh' }} />;
-
-  const handleRedirect = (actionUrl: string, type: string) => {
-    setActiveButton(type);
-    setTimeout(() => {
-      window.location.href = actionUrl;
-    }, 300);
+    return null;
   };
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "ProfilePage",
-    "mainEntity": {
-      "@type": "Person",
-      "name": creator.name,
-      "alternateName": creator.username,
-      "image": creator.avatar,
-      "description": creator.description,
-      "url": targetUrl
-    }
-  };
+  // Extract the actual profile avatar, not the site's generic OG image.
+  const imageTags = html.match(/<img\b[^>]*>/gi) ?? [];
 
-  return (
-    <div style={{
-      backgroundColor: '#030305',
-      color: '#ffffff',
-      minHeight: '100vh',
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
-      position: 'relative',
-      overflowX: 'hidden',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'space-between'
-    }}>
-      <Head>
-        <title>{creator.name} (@{creator.username}) | Verified OnlyCrave Hub</title>
-        <meta name="description" content={creator.description} />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta property="og:title" content={`${creator.name} (@${creator.username}) | OnlyCrave`} />
-        <meta property="og:description" content={creator.description} />
-        <meta property="og:image" content={creator.avatar} />
-        <meta property="og:type" content="profile" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:image" content={creator.avatar} />
-        <meta name="twitter:description" content={creator.description} />
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      </Head>
+  const avatarTag = imageTags.find((tag) => {
+    const className = getAttribute(tag, "class") ?? "";
+    return className.split(/\s+/).includes("avatarUser");
+  });
 
-      {/* Futuristic Neon Mesh Background Glows */}
-      <div style={{ position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(227,60,199,0.18) 0%, rgba(1,2,253,0.1) 50%, transparent 70%)', filter: 'blur(60px)', zIndex: 1, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '5%', right: '-10%', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(45,223,255,0.15) 0%, transparent 70%)', filter: 'blur(70px)', zIndex: 1, pointerEvents: 'none' }} />
+  const avatarSrc = avatarTag
+    ? getAttribute(avatarTag, "src")
+    : null;
 
-      {/* Main Container */}
-      <main style={{ maxWidth: '520px', width: '100%', margin: '0 auto', padding: '50px 20px', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+  const avatarAlt = avatarTag
+    ? getAttribute(avatarTag, "alt")
+    : null;
 
-        {/* Profile Avatar with Cyber Glowing Border */}
-        <div style={{ position: 'relative', marginBottom: '22px' }}>
-          <div style={{
-            position: 'absolute', inset: '-6px', borderRadius: '50%',
-            background: 'linear-gradient(135deg, #e33cc7, #2ddfff, #0102FD)',
-            filter: 'blur(10px)', opacity: 0.8
-          }} />
-          <img
-            src={creator.avatar}
-            alt={creator.name}
-            onError={(e: any) => {
-              e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=16161a&color=e33cc7&size=250&bold=true`;
-            }}
-            style={{
-              position: 'relative',
-              width: '130px',
-              height: '130px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '3px solid #18181b'
-            }}
-          />
-          <div style={{
-            position: 'absolute', bottom: '4px', right: '4px',
-            backgroundColor: '#2ddfff', color: '#000', borderRadius: '50%',
-            width: '30px', height: '30px', display: 'flex', alignItems: 'center',
-            justifyContent: 'center', fontWeight: '900', fontSize: '0.85rem',
-            border: '3px solid #030305', zIndex: 3
-          }}>✓</div>
-        </div>
-
-        {/* Name & Handle */}
-        <h1 style={{ fontSize: '1.8rem', fontWeight: '950', textAlign: 'center', marginBottom: '4px', letterSpacing: '-0.5px' }}>
-          {creator.name}
-        </h1>
-        <p style={{ color: '#e33cc7', fontSize: '0.95rem', fontWeight: '800', marginBottom: '20px', letterSpacing: '0.5px' }}>
-          @{creator.username}
-        </p>
-
-        {/* Bio Badge / Snippet */}
-        <div style={{
-          backgroundColor: 'rgba(24, 24, 27, 0.75)',
-          backdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '18px 22px',
-          borderRadius: '20px',
-          textAlign: 'center',
-          marginBottom: '35px',
-          width: '100%',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.4)'
-        }}>
-          <p style={{ fontSize: '0.92rem', lineHeight: '1.65', opacity: 0.9, margin: 0 }}>
-            {creator.description}
-          </p>
-        </div>
-
-        {/* LINK-IN-BIO ACTION BUTTONS */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-
-          {/* Primary Subscribe Button */}
-          <button
-            onClick={() => handleRedirect(targetUrl, 'subscribe')}
-            style={{
-              width: '100%', padding: '18px 22px', borderRadius: '18px', border: 'none',
-              background: 'linear-gradient(135deg, #0102FD 0%, #e33cc7 100%)',
-              color: '#fff', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer',
-              boxShadow: '0 12px 30px rgba(227, 60, 199, 0.35)',
-              transition: 'transform 0.15s ease',
-              transform: activeButton === 'subscribe' ? 'scale(0.97)' : 'scale(1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px',
-              letterSpacing: '0.5px'
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path>
-              </svg>
-              UNLOCK VIP FEED & POSTS
-            </span>
-            <span>→</span>
-          </button>
-
-          {/* Tip / Custom Request Button */}
-          <button
-            onClick={() => handleRedirect(`https://your.onlycrave.com/${creator.username}/tip`, 'tip')}
-            style={{
-              width: '100%', padding: '18px 22px', borderRadius: '18px',
-              border: '2px solid rgba(45, 223, 255, 0.4)',
-              background: 'rgba(24, 24, 27, 0.65)',
-              backdropFilter: 'blur(15px)',
-              color: '#fff', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer',
-              transition: 'transform 0.15s ease',
-              transform: activeButton === 'tip' ? 'scale(0.97)' : 'scale(1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px',
-              letterSpacing: '0.5px'
-            }}
-          >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#2ddfff' }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="12" y1="1" x2="12" y2="23"></line>
-                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
-              </svg>
-              SEND A TIP / CUSTOM REQUEST
-            </span>
-            <span style={{ color: '#2ddfff' }}>→</span>
-          </button>
-
-          {/* Direct Chat / DM Button */}
-          <button
-            onClick={() => handleRedirect(targetUrl, 'chat')}
-            style={{
-              width: '100%', padding: '16px 22px', borderRadius: '18px',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              background: 'rgba(24, 24, 27, 0.4)',
-              color: '#a1a1aa', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer',
-              transition: 'all 0.15s ease',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
-            }}
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-            </svg>
-            Chat with me directly in DMs
-          </button>
-
-        </div>
-
-        {/* Trust & Security Footer Tag */}
-        <div style={{ marginTop: '45px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-          </svg>
-          <span>100% Secure & Encrypted Transactions</span>
-        </div>
-      </main>
-
-      {/* Footer Branding */}
-      <footer style={{ textAlign: 'center', padding: '25px', opacity: 0.35, fontSize: '0.65rem', fontWeight: 800, letterSpacing: '2px', zIndex: 2 }}>
-        POWERED BY ONLYCRAVE SECURE // {new Date().getFullYear()}
-      </footer>
-    </div>
+  // Extract the visible profile name from the profile heading.
+  const headingMatch = html.match(
+    /<div\b[^>]*class=["'][^"']*\bmedia-body\b[^"']*["'][^>]*>[\s\S]*?<h[1-6]\b[^>]*>([\s\S]*?)<\/h[1-6]>/i
   );
+
+  let headingName: string | null = null;
+
+  if (headingMatch?.[1]) {
+    const headingText = headingMatch[1]
+      .replace(/<small\b[^>]*>[\s\S]*?<\/small>/gi, " ")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (headingText) {
+      headingName = decodeHtml(headingText);
+    }
+  }
+
+  // Extract the original description from the target page's metadata.
+  const description =
+    getMeta("og:description") ??
+    getMeta("twitter:description") ??
+    getMeta("description");
+
+  // Require real values from the target page. Do not substitute defaults.
+  const name = headingName ?? avatarAlt;
+
+  if (!name) {
+    throw new Error(
+      `Could not extract the creator's name from ${targetUrl}`
+    );
+  }
+
+  if (!avatarSrc) {
+    throw new Error(
+      `Could not extract the creator's avatar from ${targetUrl}`
+    );
+  }
+
+  if (!description) {
+    throw new Error(
+      `Could not extract the creator's description from ${targetUrl}`
+    );
+  }
+
+  // Resolve relative image URLs against the target page.
+  const avatar = new URL(avatarSrc, targetUrl).toString();
+
+  const creator = {
+    username,
+    name,
+    avatar,
+    description,
+  };
+
+  return {
+    props: {
+      creator,
+      targetUrl,
+    },
+  };
 }
