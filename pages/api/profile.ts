@@ -1,5 +1,4 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import * as cheerio from "cheerio";
 
 type Profile = {
   url: string;
@@ -58,7 +57,6 @@ export default async function handler(
     }
 
     const html = await response.text();
-    const $ = cheerio.load(html);
 
     const absoluteUrl = (value?: string) => {
       if (!value) return "";
@@ -70,42 +68,63 @@ export default async function handler(
       }
     };
 
-    const meta = (property: string) =>
-      $(`meta[property="${property}"]`).attr("content") ||
-      $(`meta[name="${property}"]`).attr("content") ||
-      "";
+    // Helper to extract meta tag content using regex
+    const getMeta = (prop: string) => {
+      const regex = new RegExp(`<meta\\s+(?:property|name)=["']${prop}["']\\s+content=["']([^"']*)["']`, "i");
+      const match = html.match(regex);
+      if (match && match[1]) return match[1].trim();
+      
+      const reverseRegex = new RegExp(`<meta\\s+content=["']([^"']*)["']\\s+(?:property|name)=["']${prop}["']`, "i");
+      const reverseMatch = html.match(reverseRegex);
+      return reverseMatch && reverseMatch[1] ? reverseMatch[1].trim() : "";
+    };
+
+    // Helper to extract a tag attribute or inner text using regex
+    const getAttrByClass = (className: string, attr: string) => {
+      const regex = new RegExp(`<[^>]+class=["'][^"']*\\b${className}\\b[^"']*["'][^>]*${attr}=["']([^"']*)["']`, "i");
+      const match = html.match(regex);
+      return match ? match[1] : "";
+    };
+
+    const getTextByClass = (className: string) => {
+      const regex = new RegExp(`<[^>]+class=["'][^"']*\\b${className}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`, "i");
+      const match = html.match(regex);
+      if (!match) return "";
+      // Strip inner tags to get plain text
+      return match[1].replace(/<[^>]*>/g, "").trim();
+    };
 
     const avatar =
-      $(".avatarUser").first().attr("src") ||
-      $('meta[property="og:image"]').attr("content") ||
-      $('meta[name="twitter:image"]').attr("content") ||
+      getAttrByClass("avatarUser", "src") ||
+      getMeta("og:image") ||
+      getMeta("twitter:image") ||
       "";
 
-    const coverStyle =
-      $(".jumbotron-cover-user").first().attr("style") || "";
+    const coverStyleRegex = /<[^>]+class=["'][^"']*jumbotron-cover-user[^"']*["'][^>]*style=["']([^"']*)["']/i;
+    const coverStyleMatch = html.match(coverStyleRegex);
+    const coverStyle = coverStyleMatch ? coverStyleMatch[1] : "";
 
-    const coverMatch = coverStyle.match(
-      /url\(\s*['"]?(.*?)['"]?\s*\)/i
-    );
+    const coverMatch = coverStyle.match(/url\(\s*['"]?(.*?)['"]?\s*\)/i);
 
     const cover =
       coverMatch?.[1] ||
-      $(".jumbotron-cover-user img").first().attr("src") ||
+      getAttrByClass("jumbotron-cover-user", "src") ||
       "";
 
     const name =
-      $(".media-body h4").first().clone().children().remove().end().text().trim() ||
-      meta("og:title");
+      getTextByClass("media-body") ||
+      getMeta("og:title");
 
-    const username =
-      $(".media-body h4 small.text-muted").first().text().trim();
+    const usernameMatch = html.match(/<small[^>]+class=["'][^"']*text-muted[^"']*["'][^>]*>([\s\S]*?)<\/small>/i);
+    const username = usernameMatch ? usernameMatch[1].replace(/<[^>]*>/g, "").trim() : "";
 
-    const bio =
-      $(".media-body h4").first().parent().find("p").first().text().trim();
+    const bioMatch = html.match(/<div[^>]+class=["'][^"']*media-body[^"']*["'][^>]*>[\s\S]*?<p[^>]*>([\s\S]*?)<\/p>/i);
+    const bio = bioMatch ? bioMatch[1].replace(/<[^>]*>/g, "").trim() : "";
 
+    const descMatch = html.match(/<[^>]+itemprop=["']description["'][^>]*>([\s\S]*?)<\/[^>]+>/i);
     const story =
-      $('[itemprop="description"]').first().text().trim() ||
-      meta("og:description");
+      (descMatch ? descMatch[1].replace(/<[^>]*>/g, "").trim() : "") ||
+      getMeta("og:description");
 
     const profile: Profile = {
       url: parsedUrl.toString(),
