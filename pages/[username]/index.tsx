@@ -7,56 +7,116 @@ export async function getServerSideProps(context: any) {
   const cleanUsername = Array.isArray(username) ? username[0].toLowerCase() : username.toLowerCase();
   const targetUrl = `https://onlycrave.com/${cleanUsername}`;
 
+  // Start with empty values — we will fill them from the live page source.
+  // No more generic "Welcome to my private world..." placeholder text.
   let creator = {
     username: cleanUsername,
-    name: cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1),
-    avatar: `https://onlycrave.com/public/img/home_index.svg`,
-    description: `Welcome to my private world. Explore exclusive content and unreleased updates.`
+    name: '',
+    avatar: '',
+    description: ''
   };
 
   try {
-    const res = await fetch(targetUrl, { 
+    const res = await fetch(targetUrl, {
       headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
       signal: AbortSignal.timeout(10000)
     });
-    
+
     if (res.ok) {
       const text = await res.text();
-      
+
+      // Return the LAST matching <meta> tag value.
+      // OnlyCrave pages declare many meta tags twice: first a generic
+      // brand-wide version near the top of <head>, then a profile-specific
+      // version further down. We want the profile-specific one, so we walk
+      // every match and keep the last.
       const getMetaContent = (propName: string, attrName: string = 'property') => {
-        const regex = new RegExp(`<meta\\s+${attrName}=["']${propName}["']\\s+content=["']([^"']*)["']`, "gi");
-        const match = regex.exec(text);
-        if (match && match[1]) return match[1].trim();
-
-        const reverseRegex = new RegExp(`<meta\\s+content=["']([^"']*)["']\\s+${attrName}=["']${propName}["']`, "gi");
-        const reverseMatch = reverseRegex.exec(text);
-        if (reverseMatch && reverseMatch[1]) return reverseMatch[1].trim();
-
-        return "";
+        const forward = new RegExp(
+          `<meta\\s+[^>]*${attrName}=["']${propName}["'][^>]*content=["']([^"']*)["']`,
+          'gi'
+        );
+        const reverse = new RegExp(
+          `<meta\\s+[^>]*content=["']([^"']*)["'][^>]*${attrName}=["']${propName}["']`,
+          'gi'
+        );
+        let last: string | null = null;
+        let m: RegExpExecArray | null;
+        while ((m = forward.exec(text)) !== null) last = m[1];
+        while ((m = reverse.exec(text)) !== null) last = m[1];
+        return last ? last.trim() : '';
       };
 
-      // Extract specific target tags as requested
-      const twitterImage = getMetaContent("twitter:image", "name") || getMetaContent("og:image", "property");
-      const twitterDesc = getMetaContent("twitter:description", "name") || getMetaContent("og:description", "property");
-      const ogSiteName = getMetaContent("og:site_name", "property");
-      const ogTitle = getMetaContent("og:title", "property");
+      // Pull the inner text of <title>…</title> as a final fallback for the name.
+      const getTitleTag = (): string => {
+        const m = text.match(/<title[^>]*>([^<]+)<\/title>/i);
+        return m ? m[1].trim() : '';
+      };
 
-      if (twitterImage && !twitterImage.includes("home_index.svg")) {
-        creator.avatar = twitterImage.startsWith('http') ? twitterImage : `https://onlycrave.com${twitterImage}`;
+      // Strip the trailing brand suffix (e.g. " - Onlycrave", " | Onlycrave",
+      // " - Onlycrave - Connect with Fans. Earn with Content.") without
+      // touching hyphens that legitimately appear inside a display name
+      // (e.g. "Mary-Jane").
+      const stripBrandSuffix = (s: string): string =>
+        s.replace(/\s*[-–—|]\s*Onlycrave.*$/i, '').replace(/^Onlycrave\s*[-–—|]\s*/i, '').trim();
+
+      // ---- AVATAR -------------------------------------------------------
+      // Prefer twitter:image (the real uploaded avatar). The page also emits
+      // a generic og:image pointing to home_index.svg — we explicitly skip
+      // that so we never display the placeholder logo as the profile photo.
+      const twitterImage = getMetaContent('twitter:image', 'name');
+      const ogImage = getMetaContent('og:image', 'property');
+      const candidateAvatar = twitterImage || ogImage || '';
+      if (candidateAvatar && !candidateAvatar.includes('home_index.svg')) {
+        creator.avatar = candidateAvatar.startsWith('http')
+          ? candidateAvatar
+          : `https://onlycrave.com${candidateAvatar}`;
       }
 
-      if (twitterDesc) {
-        creator.description = twitterDesc;
+      // ---- BIO / DESCRIPTION -------------------------------------------
+      // twitter:description on these profiles is the clean bio text
+      // (e.g. "A bad ass with a good ass."). Some other meta tags prepend
+      // "username - " to the same text, so we strip that prefix if present.
+      const twitterDesc = getMetaContent('twitter:description', 'name');
+      const ogDesc = getMetaContent('og:description', 'property');
+      const metaDesc = getMetaContent('description', 'name');
+      const candidateDesc = twitterDesc || ogDesc || metaDesc || '';
+      if (candidateDesc) {
+        creator.description = candidateDesc.replace(
+          new RegExp(`^${cleanUsername}\\s*[-–—|]\\s*`, 'i'),
+          ''
+        ).trim();
       }
 
-      if (ogSiteName) {
-        creator.name = ogSiteName.replace(/-.*$/, "").trim();
-      } else if (ogTitle) {
-        creator.name = ogTitle.replace(/-.*$/, "").trim();
-      }
+      // ---- NAME ---------------------------------------------------------
+      // Priority: twitter:title (already clean, e.g. "Njoki Murira")
+      //          -> og:site_name (e.g. "Njoki Murira - Onlycrave")
+      //          -> og:title    (e.g. "Njoki Murira - Onlycrave")
+      //          -> <title>     (e.g. "Njoki Murira - Onlycrave - Connect…")
+      // The last three need the brand suffix stripped.
+      const twitterTitle = getMetaContent('twitter:title', 'name');
+      const ogSiteName = getMetaContent('og:site_name', 'property');
+      const ogTitle = getMetaContent('og:title', 'property');
+      const titleTag = getTitleTag();
+
+      const candidateName =
+        twitterTitle ||
+        stripBrandSuffix(ogSiteName) ||
+        stripBrandSuffix(ogTitle) ||
+        stripBrandSuffix(titleTag);
+
+      if (candidateName) creator.name = candidateName;
     }
   } catch (e) {
-    console.error("Metadata mirror failed, using fallback details");
+    console.error('Metadata mirror failed, using fallback details');
+  }
+
+  // Last-resort fallbacks — only kick in if the live page gave us nothing.
+  if (!creator.name) creator.name = cleanUsername;
+  if (!creator.avatar) {
+    creator.avatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=16161a&color=e33cc7&size=250&bold=true`;
+  }
+  if (!creator.description) {
+    creator.description = `Subscribe to @${cleanUsername} on Onlycrave for exclusive content, posts, and direct messages.`;
   }
 
   return { props: { creator, targetUrl } };
@@ -94,10 +154,10 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
   };
 
   return (
-    <div style={{ 
-      backgroundColor: '#030305', 
-      color: '#ffffff', 
-      minHeight: '100vh', 
+    <div style={{
+      backgroundColor: '#030305',
+      color: '#ffffff',
+      minHeight: '100vh',
       fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
       position: 'relative',
       overflowX: 'hidden',
@@ -109,7 +169,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
         <title>{creator.name} (@{creator.username}) | Verified OnlyCrave Hub</title>
         <meta name="description" content={creator.description} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta property="og:title" content={`${creator.name} (@{creator.username}) | OnlyCrave`} />
+        <meta property="og:title" content={`${creator.name} (@${creator.username}) | OnlyCrave`} />
         <meta property="og:description" content={creator.description} />
         <meta property="og:image" content={creator.avatar} />
         <meta property="og:type" content="profile" />
@@ -125,35 +185,35 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
 
       {/* Main Container */}
       <main style={{ maxWidth: '520px', width: '100%', margin: '0 auto', padding: '50px 20px', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-        
+
         {/* Profile Avatar with Cyber Glowing Border */}
         <div style={{ position: 'relative', marginBottom: '22px' }}>
-          <div style={{ 
-            position: 'absolute', inset: '-6px', borderRadius: '50%', 
-            background: 'linear-gradient(135deg, #e33cc7, #2ddfff, #0102FD)', 
-            filter: 'blur(10px)', opacity: 0.8 
+          <div style={{
+            position: 'absolute', inset: '-6px', borderRadius: '50%',
+            background: 'linear-gradient(135deg, #e33cc7, #2ddfff, #0102FD)',
+            filter: 'blur(10px)', opacity: 0.8
           }} />
-          <img 
-            src={creator.avatar} 
+          <img
+            src={creator.avatar}
             alt={creator.name}
             onError={(e: any) => {
               e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(creator.name)}&background=16161a&color=e33cc7&size=250&bold=true`;
             }}
-            style={{ 
+            style={{
               position: 'relative',
-              width: '130px', 
-              height: '130px', 
-              borderRadius: '50%', 
-              objectFit: 'cover', 
+              width: '130px',
+              height: '130px',
+              borderRadius: '50%',
+              objectFit: 'cover',
               border: '3px solid #18181b'
-            }} 
+            }}
           />
-          <div style={{ 
-            position: 'absolute', bottom: '4px', right: '4px', 
-            backgroundColor: '#2ddfff', color: '#000', borderRadius: '50%', 
-            width: '30px', height: '30px', display: 'flex', alignItems: 'center', 
-            justifyContent: 'center', fontWeight: '900', fontSize: '0.85rem', 
-            border: '3px solid #030305', zIndex: 3 
+          <div style={{
+            position: 'absolute', bottom: '4px', right: '4px',
+            backgroundColor: '#2ddfff', color: '#000', borderRadius: '50%',
+            width: '30px', height: '30px', display: 'flex', alignItems: 'center',
+            justifyContent: 'center', fontWeight: '900', fontSize: '0.85rem',
+            border: '3px solid #030305', zIndex: 3
           }}>✓</div>
         </div>
 
@@ -166,14 +226,14 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
         </p>
 
         {/* Bio Badge / Snippet */}
-        <div style={{ 
-          backgroundColor: 'rgba(24, 24, 27, 0.75)', 
+        <div style={{
+          backgroundColor: 'rgba(24, 24, 27, 0.75)',
           backdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)', 
-          padding: '18px 22px', 
-          borderRadius: '20px', 
-          textAlign: 'center', 
-          marginBottom: '35px', 
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          padding: '18px 22px',
+          borderRadius: '20px',
+          textAlign: 'center',
+          marginBottom: '35px',
           width: '100%',
           boxShadow: '0 15px 35px rgba(0,0,0,0.4)'
         }}>
@@ -184,15 +244,15 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
 
         {/* LINK-IN-BIO ACTION BUTTONS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
-          
+
           {/* Primary Subscribe Button */}
-          <button 
+          <button
             onClick={() => handleRedirect(targetUrl, 'subscribe')}
-            style={{ 
-              width: '100%', padding: '18px 22px', borderRadius: '18px', border: 'none', 
-              background: 'linear-gradient(135deg, #0102FD 0%, #e33cc7 100%)', 
-              color: '#fff', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', 
-              boxShadow: '0 12px 30px rgba(227, 60, 199, 0.35)', 
+            style={{
+              width: '100%', padding: '18px 22px', borderRadius: '18px', border: 'none',
+              background: 'linear-gradient(135deg, #0102FD 0%, #e33cc7 100%)',
+              color: '#fff', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer',
+              boxShadow: '0 12px 30px rgba(227, 60, 199, 0.35)',
               transition: 'transform 0.15s ease',
               transform: activeButton === 'subscribe' ? 'scale(0.97)' : 'scale(1)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px',
@@ -209,14 +269,14 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
           </button>
 
           {/* Tip / Custom Request Button */}
-          <button 
+          <button
             onClick={() => handleRedirect(`https://your.onlycrave.com/${creator.username}/tip`, 'tip')}
-            style={{ 
-              width: '100%', padding: '18px 22px', borderRadius: '18px', 
-              border: '2px solid rgba(45, 223, 255, 0.4)', 
-              background: 'rgba(24, 24, 27, 0.65)', 
+            style={{
+              width: '100%', padding: '18px 22px', borderRadius: '18px',
+              border: '2px solid rgba(45, 223, 255, 0.4)',
+              background: 'rgba(24, 24, 27, 0.65)',
               backdropFilter: 'blur(15px)',
-              color: '#fff', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer', 
+              color: '#fff', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer',
               transition: 'transform 0.15s ease',
               transform: activeButton === 'tip' ? 'scale(0.97)' : 'scale(1)',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px',
@@ -234,13 +294,13 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
           </button>
 
           {/* Direct Chat / DM Button */}
-          <button 
+          <button
             onClick={() => handleRedirect(targetUrl, 'chat')}
-            style={{ 
-              width: '100%', padding: '16px 22px', borderRadius: '18px', 
-              border: '1px solid rgba(255, 255, 255, 0.1)', 
-              background: 'rgba(24, 24, 27, 0.4)', 
-              color: '#a1a1aa', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', 
+            style={{
+              width: '100%', padding: '16px 22px', borderRadius: '18px',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(24, 24, 27, 0.4)',
+              color: '#a1a1aa', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer',
               transition: 'all 0.15s ease',
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
             }}
