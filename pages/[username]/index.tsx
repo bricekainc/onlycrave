@@ -23,45 +23,36 @@ export async function getServerSideProps(context: any) {
     if (res.ok) {
       const text = await res.text();
       
-      const getMeta = (property: string) => {
-        const regex = new RegExp(`<meta\\s+(?:property|name)=["']${property}["']\\s+content=["']([^"']*)["']`, "gi");
-        const matches = [...text.matchAll(regex)];
-        if (matches.length > 0) {
-          for (const match of matches.reverse()) {
-            if (match[1] && !match[1].includes("home_index.svg")) {
-              return match[1].trim();
-            }
-          }
-          return matches[0][1].trim();
-        }
+      const getMetaContent = (propName: string, attrName: string = 'property') => {
+        const regex = new RegExp(`<meta\\s+${attrName}=["']${propName}["']\\s+content=["']([^"']*)["']`, "gi");
+        const match = regex.exec(text);
+        if (match && match[1]) return match[1].trim();
+
+        const reverseRegex = new RegExp(`<meta\\s+content=["']([^"']*)["']\\s+${attrName}=["']${propName}["']`, "gi");
+        const reverseMatch = reverseRegex.exec(text);
+        if (reverseMatch && reverseMatch[1]) return reverseMatch[1].trim();
+
         return "";
       };
 
-      const tMatch = text.match(/<title>([^<]*)<\/title>/i);
-      const ogTitle = getMeta("og:title") || (tMatch ? tMatch[1] : "");
-      const ogImage = getMeta("og:image") || getMeta("twitter:image");
-      const ogDesc = getMeta("og:description") || getMeta("description");
-      const siteName = getMeta("og:site_name");
+      // Extract specific target tags as requested
+      const twitterImage = getMetaContent("twitter:image", "name") || getMetaContent("og:image", "property");
+      const twitterDesc = getMetaContent("twitter:description", "name") || getMetaContent("og:description", "property");
+      const ogSiteName = getMetaContent("og:site_name", "property");
+      const ogTitle = getMetaContent("og:title", "property");
 
-      if (ogImage && !ogImage.includes("home_index.svg")) {
-        creator.avatar = ogImage.startsWith('http') ? ogImage : `https://onlycrave.com${ogImage}`;
-      } else {
-        // Fallback pattern if specific upload avatar tag is nested differently
-        const avatarMatch = text.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']*uploads\/avatar[^"']*)["']/i);
-        if (avatarMatch && avatarMatch[1]) {
-          creator.avatar = avatarMatch[1].trim();
-        }
+      if (twitterImage && !twitterImage.includes("home_index.svg")) {
+        creator.avatar = twitterImage.startsWith('http') ? twitterImage : `https://onlycrave.com${twitterImage}`;
       }
 
-      if (ogDesc) {
-        creator.description = ogDesc;
+      if (twitterDesc) {
+        creator.description = twitterDesc;
       }
 
-      if (siteName) {
-        creator.name = siteName.split('-')[0].trim();
+      if (ogSiteName) {
+        creator.name = ogSiteName.replace(/-.*$/, "").trim();
       } else if (ogTitle) {
-        const nameParts = ogTitle.split('(@');
-        creator.name = nameParts[0].trim() || creator.name;
+        creator.name = ogTitle.replace(/-.*$/, "").trim();
       }
     }
   } catch (e) {
@@ -80,7 +71,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
     setMounted(true);
   }, []);
 
-  if (!mounted) return <div style={{ background: '#09090b', minHeight: '100vh' }} />;
+  if (!mounted) return <div style={{ background: '#030305', minHeight: '100vh' }} />;
 
   const handleRedirect = (actionUrl: string, type: string) => {
     setActiveButton(type);
@@ -124,6 +115,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
         <meta property="og:type" content="profile" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={creator.avatar} />
+        <meta name="twitter:description" content={creator.description} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
