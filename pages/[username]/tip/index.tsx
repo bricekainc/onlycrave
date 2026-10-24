@@ -129,57 +129,54 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
 
   const Icon3D = ({ type }: { type: 'phone' | 'paypal' | 'bitpay' | 'card' | 'bitcoin' }) => {
     const base: React.CSSProperties = {
-      width: '30px',
-      height: '30px',
-      borderRadius: '12px',
+      width: '32px',
+      height: '32px',
+      borderRadius: '10px',
       display: 'inline-flex',
       alignItems: 'center',
       justifyContent: 'center',
-      boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.35), 0 8px 16px rgba(0,0,0,0.3)',
+      boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.25), 0 6px 14px rgba(0,0,0,0.3)',
       overflow: 'hidden',
+      background: '#fff',
+      padding: '4px',
     };
 
-    const map: Record<string, React.CSSProperties> = {
-      phone: { background: 'linear-gradient(145deg, #22c55e, #064e3b)' },
-      paypal: { background: 'linear-gradient(145deg, #38bdf8, #075985)' },
-      bitpay: { background: 'linear-gradient(145deg, #60a5fa, #1d4ed8)' },
-      card: { background: 'linear-gradient(145deg, #fb7185, #be123c)' },
-      bitcoin: { background: 'linear-gradient(145deg, #fbbf24, #b45309)' },
-    };
-
-    const renderSvg = () => {
+    const renderIcon = () => {
       switch (type) {
-        case 'phone': // M-Pesa / Mobile Sim/Phone icon
+        case 'phone': // M-Pesa Official Logo
           return (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
-              <line x1="12" y1="18" x2="12.01" y2="18"></line>
-            </svg>
+            <img 
+              src="https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/M-PESA.png/250px-M-PESA.png" 
+              alt="M-Pesa" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+            />
           );
-        case 'paypal': // PayPal 'PP' monogram SVG
+        case 'paypal': // PayPal Official Logo
           return (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M7 4h6c2 0 3.5 1 3.5 3s-1.5 3-3.5 3H9v6H7V4z"></path>
-              <path d="M11 10h4c2 0 3.5 1 3.5 3s-1.5 3-3.5 3h-4v4H11V10z"></path>
-            </svg>
+            <img 
+              src="https://www.paypalobjects.com/webstatic/i/logo/rebrand/ppcom.png" 
+              alt="PayPal" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+            />
           );
-        case 'bitpay': // BitPay 'B' shield / lightning icon
+        case 'bitpay': // BitPay Official Logo
           return (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 2l9 4v6c0 5.5-3.8 10.7-9 12-5.2-1.3-9-6.5-9-12V6l9-4z"></path>
-              <path d="M9 12h6m-3-3v6"></path>
-            </svg>
+            <img 
+              src="https://framerusercontent.com/images/2iIIkkV5Qoskq2dfhwja8G8rFW0.png" 
+              alt="BitPay" 
+              style={{ width: '100%', height: '100%', objectFit: 'contain' }} 
+            />
           );
-        case 'card': // Google Pay / Credit Card icon
+        case 'card': // Credit Card / G-Pay icon SVG
           return (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#be123c" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
               <line x1="1" y1="10" x2="23" y2="10"></line>
             </svg>
           );
-        case 'bitcoin': // Crypto / Bitcoin symbol
+        case 'bitcoin': // Crypto / Bitcoin symbol SVG
           return (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M9 4v16m4-16v16m-4-12h4a3 3 0 0 1 0 6H9m4 0h4a3 3 0 0 1 0 6H9"></path>
             </svg>
           );
@@ -189,8 +186,8 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
     };
 
     return (
-      <span style={{ ...base, ...map[type] }}>
-        {renderSvg()}
+      <span style={base}>
+        {renderIcon()}
       </span>
     );
   };
