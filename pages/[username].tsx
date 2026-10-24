@@ -1,19 +1,89 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
-import { getCreators } from '../lib/getCreators';
+import { GetServerSideProps } from 'next';
 
-export async function getServerSideProps(context: any) {
-  const { username } = context.params;
-  const creators = await getCreators();
-  const creator = creators.find((c: any) => c.username.toLowerCase() === username.toLowerCase());
-
-  if (!creator) return { notFound: true };
-
-  return { props: { creator } };
+interface CreatorProfileProps {
+  creator: {
+    url: string;
+    name: string;
+    username: string;
+    avatar: string;
+    cover: string;
+    bio: string;
+    story: string;
+    link: string;
+  };
 }
 
-export default function CreatorProfile({ creator }: { creator: any }) {
+export const getServerSideProps: GetServerSideProps = async (context) => {
+  const { username } = context.params;
+  const cleanUsername = Array.isArray(username) ? username[0] : username;
+
+  if (!cleanUsername) {
+    return { notFound: true };
+  }
+
+  try {
+    const targetUrl = `https://onlycrave.com/${cleanUsername}`;
+    const response = await fetch(targetUrl, {
+      headers: {
+        "User-Agent": "Mozilla/5.0",
+        Accept: "text/html",
+      },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!response.ok) {
+      return { notFound: true };
+    }
+
+    const html = await response.text();
+
+    const getMetaContent = (property: string) => {
+      const regex = new RegExp(`<meta\\s+(?:property|name)=["']${property}["']\\s+content=["']([^"']*)["']`, "gi");
+      const matches = [...html.matchAll(regex)];
+      if (matches.length > 0) {
+        for (const match of matches.reverse()) {
+          if (match[1] && !match[1].includes("home_index.svg")) {
+            return match[1].trim();
+          }
+        }
+        return matches[0][1].trim();
+      }
+      return "";
+    };
+
+    const getTagText = (tagName: string) => {
+      const regex = new RegExp(`<${tagName}[^>]*>([\\s\\S]*?)<\\/${tagName}>`, "i");
+      const match = html.match(regex);
+      return match ? match[1].replace(/<[^>]*>/g, "").trim() : "";
+    };
+
+    const avatar = getMetaContent("og:image") || getMetaContent("twitter:image") || "";
+    const siteName = getMetaContent("og:site_name");
+    const rawTitle = getTagText("title");
+    const name = siteName || rawTitle.split("-")[0].trim() || getMetaContent("twitter:title") || cleanUsername;
+    const description = getMetaContent("og:description") || getMetaContent("twitter:description") || `Official profile for @${cleanUsername} on OnlyCrave.`;
+
+    const creator = {
+      url: targetUrl,
+      name,
+      username: cleanUsername,
+      avatar: avatar.startsWith('http') ? avatar : `https://onlycrave.com${avatar}`,
+      cover: "",
+      bio: description,
+      story: description,
+      link: targetUrl,
+    };
+
+    return { props: { creator } };
+  } catch {
+    return { notFound: true };
+  }
+};
+
+export default function CreatorProfile({ creator }: CreatorProfileProps) {
   const router = useRouter();
   const [mounted, setMounted] = useState(false);
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark');
@@ -61,8 +131,8 @@ export default function CreatorProfile({ creator }: { creator: any }) {
       "name": creator.name,
       "alternateName": creator.username,
       "image": creator.avatar,
-      "description": creator.description,
-      "url": `https://onlycrave.com/@${creator.username}`
+      "description": creator.bio,
+      "url": `https://onlycrave.com/${creator.username}`
     }
   };
 
@@ -70,10 +140,10 @@ export default function CreatorProfile({ creator }: { creator: any }) {
     <div style={{ backgroundColor: theme.bg, color: theme.text, minHeight: '100vh', fontFamily: "'Inter', sans-serif", transition: '0.3s' }}>
       <Head>
         <title>{creator.name} (@{creator.username}) - Official OnlyCrave Profile & Exclusive Content</title>
-        <meta name="description" content={`Explore ${creator.name}'s official OnlyCrave profile. Discover exclusive media, direct creator subscription updates, secure payments via M-Pesa and PayPal, and direct community access.`} />
+        <meta name="description" content={creator.bio} />
         <meta name="keywords" content={`${creator.name}, ${creator.username}, OnlyCrave creator, exclusive content, verified creator profile, content subscription`} />
         <meta property="og:title" content={`${creator.name} (@{creator.username}) | OnlyCrave`} />
-        <meta property="og:description" content={`Access ${creator.name}'s exclusive inner circle content securely through OnlyCrave.`} />
+        <meta property="og:description" content={creator.bio} />
         <meta property="og:image" content={creator.avatar} />
         <meta property="og:type" content="profile" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
@@ -112,7 +182,7 @@ export default function CreatorProfile({ creator }: { creator: any }) {
         {/* Bio Section */}
         <section style={{ backgroundColor: theme.card, padding: '30px', borderRadius: '24px', border: `1px solid ${theme.border}`, marginBottom: '30px' }}>
           <h2 style={{ fontSize: '1rem', marginBottom: '12px', color: theme.secondary, textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 900 }}>About {creator.name}</h2>
-          <p style={{ lineHeight: '1.8', opacity: 0.8, fontSize: '1.05rem' }}>{creator.description}</p>
+          <p style={{ lineHeight: '1.8', opacity: 0.8, fontSize: '1.05rem' }}>{creator.bio}</p>
           <p style={{ lineHeight: '1.8', opacity: '0.6', fontSize: '0.9rem', marginTop: '15px' }}>
             Welcome to the official verified digital hub for {creator.name}. Follow this profile to unlock premium interactive media updates, high-resolution photo galleries, private video archives, and direct fan-to-creator messaging options hosted safely within the OnlyCrave platform infrastructure.
           </p>
@@ -132,7 +202,7 @@ export default function CreatorProfile({ creator }: { creator: any }) {
           </div>
           
           <h2 style={{ fontSize: '1.8rem', fontWeight: 900, marginBottom: '20px' }}>
-            Join {creator.name}'s Inner Circle
+            Join {creator.name}&apos;s Inner Circle
           </h2>
           
           <div style={{ display: 'grid', gap: '20px', marginBottom: '30px' }}>
@@ -190,7 +260,7 @@ export default function CreatorProfile({ creator }: { creator: any }) {
         <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(15px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '20px' }}>
           <div style={{ backgroundColor: theme.card, padding: '40px', borderRadius: '32px', maxWidth: '450px', width: '100%', textAlign: 'center', border: `2px solid ${theme.primary}` }}>
             <h2 style={{ color: theme.primary, fontSize: '2rem', fontWeight: 900 }}>AGE VERIFICATION REQUIRED</h2>
-            <p style={{ margin: '20px 0 40px', opacity: 0.8, lineHeight: '1.6' }}>Please confirm that you are at least 18 years of age (or the legal age of majority in your jurisdiction) to proceed to {creator.name}'s private media hub.</p>
+            <p style={{ margin: '20px 0 40px', opacity: 0.8, lineHeight: '1.6' }}>Please confirm that you are at least 18 years of age (or the legal age of majority in your jurisdiction) to proceed to {creator.name}&apos;s private media hub.</p>
             <div style={{ display: 'flex', gap: '15px' }}>
               <button onClick={() => handleAgeVerify(false)} style={{ flex: 1, padding: '20px', borderRadius: '15px', background: 'transparent', border: `1px solid ${theme.border}`, color: theme.text, fontWeight: '700', cursor: 'pointer' }}>EXIT</button>
               <button onClick={() => handleAgeVerify(true)} style={{ flex: 1, padding: '20px', borderRadius: '15px', background: theme.primary, border: 'none', color: '#fff', fontWeight: '900', cursor: 'pointer' }}>I AM 18+</button>
