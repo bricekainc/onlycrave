@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
           Markup.button.url('💎 Join Now', 'https://onlycrave.com/register')
         ],
         [Markup.button.callback('❔ Frequently Asked Questions', 'show_faq')],
-        [Markup.button.url('🌐 Open Web App', 'https://onlycrave.vercel.app')]
+        [Markup.button.url('🌐 Open Web App', 'https://your.onlycrave.com')]
       ])
     );
   });
@@ -62,7 +62,7 @@ export default async function handler(req: any, res: any) {
     const displayResults = results.slice(0, 5);
 
     for (const [index, c] of displayResults.entries()) {
-      const profileUrl = `https://onlycrave.vercel.app/${c.username}`;
+      const profileUrl = `https://your.onlycrave.com/${c.username}`;
       
       // Creating a "Premium" feel caption
       const caption = 
@@ -85,7 +85,7 @@ export default async function handler(req: any, res: any) {
     if (results.length > 5) {
       await ctx.reply(
         `✨ *Wait, there's more!* \nWe found ${results.length - 5} other creators matching your search.`,
-        Markup.inlineKeyboard([[Markup.button.url('🔎 View All Results', `https://onlycrave.vercel.app/search?q=${query}`)]])
+        Markup.inlineKeyboard([[Markup.button.url('🔎 View All Results', `https://your.onlycrave.com/search?q=${query}`)]])
       );
     }
   });
