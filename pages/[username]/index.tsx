@@ -8,7 +8,7 @@ interface CreatorPageProps {
     username: string;
     name: string;
     avatar: string;
-    description: string;
+    description: string | null;
   };
   targetUrl: string;
 }
@@ -24,14 +24,16 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-  // Direct, high-performance creator metadata configuration (Zero external fetch failures)
+  // Database / Known Creator Bios Lookup (No generic text)
+  const knownBios: Record<string, string> = {
+    njokimurira: 'A bad ass with a good ass.',
+  };
+
   const creator = {
     username: cleanUsername,
     name: formattedName || 'Creator Hub',
     avatar: `https://onlycrave.com/public/uploads/avatar/${cleanUsername}.jpg`,
-    description: cleanUsername === 'njokimurira' 
-      ? 'A bad ass with a good ass.' 
-      : `Welcome to my private world. Explore exclusive content and unreleased updates from @${cleanUsername}.`,
+    description: knownBios[cleanUsername] || null, // null removes the section entirely if unknown
   };
 
   const targetUrl = `https://onlycrave.com/${cleanUsername}`;
@@ -70,7 +72,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: CreatorPageProps)
       "name": creator.name,
       "alternateName": creator.username,
       "image": creator.avatar,
-      "description": creator.description,
+      "description": creator.description || `${creator.name} on OnlyCrave`,
       "url": targetUrl
     }
   };
@@ -89,15 +91,15 @@ export default function CreatorLinkBio({ creator, targetUrl }: CreatorPageProps)
     }}>
       <Head>
         <title>{creator.name} (@{creator.username}) | Verified OnlyCrave Hub</title>
-        <meta name="description" content={creator.description} />
+        <meta name="description" content={creator.description || `${creator.name} (@{creator.username}) on OnlyCrave`} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta property="og:title" content={`${creator.name} (@{creator.username}) | OnlyCrave`} />
-        <meta property="og:description" content={creator.description} />
+        <meta property="og:description" content={creator.description || `${creator.name} on OnlyCrave`} />
         <meta property="og:image" content={creator.avatar} />
         <meta property="og:type" content="profile" />
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:image" content={creator.avatar} />
-        <meta name="twitter:description" content={creator.description} />
+        {creator.description && <meta name="twitter:description" content={creator.description} />}
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
@@ -143,26 +145,28 @@ export default function CreatorLinkBio({ creator, targetUrl }: CreatorPageProps)
         <h1 style={{ fontSize: '1.8rem', fontWeight: '950', textAlign: 'center', marginBottom: '4px', letterSpacing: '-0.5px' }}>
           {creator.name}
         </h1>
-        <p style={{ color: '#e33cc7', fontSize: '0.95rem', fontWeight: '800', marginBottom: '20px', letterSpacing: '0.5px' }}>
+        <p style={{ color: '#e33cc7', fontSize: '0.95rem', fontWeight: '800', marginBottom: creator.description ? '20px' : '35px', letterSpacing: '0.5px' }}>
           @{creator.username}
         </p>
 
-        {/* Bio Badge / Snippet */}
-        <div style={{ 
-          backgroundColor: 'rgba(24, 24, 27, 0.75)', 
-          backdropFilter: 'blur(15px)',
-          border: '1px solid rgba(255, 255, 255, 0.08)', 
-          padding: '18px 22px', 
-          borderRadius: '20px', 
-          textAlign: 'center', 
-          marginBottom: '35px', 
-          width: '100%',
-          boxShadow: '0 15px 35px rgba(0,0,0,0.4)'
-        }}>
-          <p style={{ fontSize: '0.92rem', lineHeight: '1.65', opacity: 0.9, margin: 0 }}>
-            {creator.description}
-          </p>
-        </div>
+        {/* Bio Badge / Snippet (Only rendered if an actual original bio exists) */}
+        {creator.description && (
+          <div style={{ 
+            backgroundColor: 'rgba(24, 24, 27, 0.75)', 
+            backdropFilter: 'blur(15px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)', 
+            padding: '18px 22px', 
+            borderRadius: '20px', 
+            textAlign: 'center', 
+            marginBottom: '35px', 
+            width: '100%',
+            boxShadow: '0 15px 35px rgba(0,0,0,0.4)'
+          }}>
+            <p style={{ fontSize: '0.92rem', lineHeight: '1.65', opacity: 0.9, margin: 0 }}>
+              {creator.description}
+            </p>
+          </div>
+        )}
 
         {/* LINK-IN-BIO ACTION BUTTONS */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', width: '100%' }}>
