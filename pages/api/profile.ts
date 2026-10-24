@@ -1,4 +1,3 @@
-```typescript
 import type { NextApiRequest, NextApiResponse } from "next";
 import * as cheerio from "cheerio";
 
@@ -125,4 +124,3 @@ export default async function handler(
     });
   }
 }
-```
