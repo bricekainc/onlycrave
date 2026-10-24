@@ -18,22 +18,17 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
   const rawUsername = Array.isArray(username) ? username[0] : (username || '');
   const cleanUsername = rawUsername.toLowerCase().trim();
 
-  // Format capitalized name (e.g. "njokimurira" -> "Njoki Murira")
+  // Dynamically format human-readable name from slug (e.g. "john_doe" -> "John Doe")
   const formattedName = cleanUsername
     .split(/[-_]/)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-  // Database / Known Creator Bios Lookup (No generic text)
-  const knownBios: Record<string, string> = {
-    njokimurira: 'A bad ass with a good ass.',
-  };
-
   const creator = {
     username: cleanUsername,
     name: formattedName || 'Creator Hub',
     avatar: `https://onlycrave.com/public/uploads/avatar/${cleanUsername}.jpg`,
-    description: knownBios[cleanUsername] || null, // null removes the section entirely if unknown
+    description: null, // Fully dynamic: set to null so it stays clean unless populated
   };
 
   const targetUrl = `https://onlycrave.com/${cleanUsername}`;
@@ -72,7 +67,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: CreatorPageProps)
       "name": creator.name,
       "alternateName": creator.username,
       "image": creator.avatar,
-      "description": creator.description || `${creator.name} on OnlyCrave`,
+      "description": creator.description || `${creator.name} (@{creator.username}) on OnlyCrave`,
       "url": targetUrl
     }
   };
@@ -149,7 +144,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: CreatorPageProps)
           @{creator.username}
         </p>
 
-        {/* Bio Badge / Snippet (Only rendered if an actual original bio exists) */}
+        {/* Bio Badge / Snippet (Only rendered if an active custom bio is present) */}
         {creator.description && (
           <div style={{ 
             backgroundColor: 'rgba(24, 24, 27, 0.75)', 
