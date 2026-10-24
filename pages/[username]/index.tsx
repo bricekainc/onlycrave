@@ -4,50 +4,62 @@ import Head from 'next/head';
 
 export async function getServerSideProps(context: any) {
   const { username } = context.params;
-  const cleanUsername = username.toLowerCase();
+  const cleanUsername = Array.isArray(username) ? username[0].toLowerCase() : username.toLowerCase();
   const targetUrl = `https://onlycrave.com/${cleanUsername}`;
 
-  // Default fallback metadata
   let creator = {
     username: cleanUsername,
-    name: username.charAt(0).toUpperCase() + username.slice(1),
+    name: cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1),
     avatar: `https://onlycrave.com/public/uploads/avatar/${cleanUsername}.jpg`,
     description: `Welcome to my private world ✨ Explore exclusive content and unreleased updates.`
   };
 
   try {
-    // Fetch the target page to mirror its exact SEO tags and info
     const res = await fetch(targetUrl, { 
-      headers: { 'User-Agent': 'Cloudflare-Worker-SEO-Bot' } 
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' },
+      signal: AbortSignal.timeout(10000)
     });
-    const text = await res.text();
     
-    // Extract Metadata using regex matching
-    const tMatch = text.match(/<title>([^<]*)<\/title>/i);
-    const dMatch = text.match(/<meta\s+name=["']description["']\s+content=["']([^"']*)["']/i);
-    const ogImageMatch = text.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']*)["']/i);
-    const ogTitleMatch = text.match(/<meta\s+property=["']og:title["']\s+content=["']([^"']*)["']/i);
-    
-    if (ogImageMatch && ogImageMatch[1]) {
-      creator.avatar = ogImageMatch[1].trim();
-    }
+    if (res.ok) {
+      const text = await res.text();
+      
+      const getMeta = (property: string) => {
+        const regex = new RegExp(`<meta\\s+(?:property|name)=["']${property}["']\\s+content=["']([^"']*)["']`, "gi");
+        const matches = [...text.matchAll(regex)];
+        if (matches.length > 0) {
+          for (const match of matches.reverse()) {
+            if (match[1] && !match[1].includes("home_index.svg")) {
+              return match[1].trim();
+            }
+          }
+          return matches[0][1].trim();
+        }
+        return "";
+      };
 
-    if (dMatch && dMatch[1]) {
-      creator.description = dMatch[1].trim();
-    }
+      const tMatch = text.match(/<title>([^<]*)<\/title>/i);
+      const ogTitle = getMeta("og:title") || (tMatch ? tMatch[1] : "");
+      const ogImage = getMeta("og:image") || getMeta("twitter:image");
+      const ogDesc = getMeta("og:description") || getMeta("description");
+      const siteName = getMeta("og:site_name");
 
-    if (ogTitleMatch && ogTitleMatch[1]) {
-      const rawTitle = ogTitleMatch[1].trim();
-      const nameParts = rawTitle.split('(@');
-      creator.name = nameParts[0].trim() || creator.name;
-    } else if (tMatch && tMatch[1]) {
-      const rawTitle = tMatch[1].trim();
-      const nameParts = rawTitle.split('(@');
-      creator.name = nameParts[0].trim() || creator.name;
-    }
+      if (ogImage) {
+        creator.avatar = ogImage.startsWith('http') ? ogImage : `https://onlycrave.com${ogImage}`;
+      }
 
+      if (ogDesc) {
+        creator.description = ogDesc;
+      }
+
+      if (siteName) {
+        creator.name = siteName.split('-')[0].trim();
+      } else if (ogTitle) {
+        const nameParts = ogTitle.split('(@');
+        creator.name = nameParts[0].trim() || creator.name;
+      }
+    }
   } catch (e) {
-    console.log("Metadata mirror failed, using default fallback profile details");
+    console.error("Metadata mirror failed, using fallback details");
   }
 
   return { props: { creator, targetUrl } };
@@ -186,8 +198,11 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px'
             }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              🔥 UNLOCK VIP FEED & POSTS
+            <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path>
+              </svg>
+              UNLOCK VIP FEED & POSTS
             </span>
             <span>→</span>
           </button>
@@ -206,8 +221,12 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
               display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px'
             }}
           >
-            <span style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#2ddfff' }}>
-              💋 SEND A TIP / CUSTOM REQUEST
+            <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#2ddfff' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="12" y1="1" x2="12" y2="23"></line>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              SEND A TIP / CUSTOM REQUEST
             </span>
             <span style={{ color: '#2ddfff' }}>→</span>
           </button>
@@ -221,17 +240,24 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
               background: 'rgba(24, 24, 27, 0.4)', 
               color: '#a1a1aa', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', 
               transition: 'all 0.15s ease',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px'
             }}
           >
-            💬 Chat with me directly in DMs
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            Chat with me directly in DMs
           </button>
 
         </div>
 
         {/* Trust & Security Footer Tag */}
-        <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
-          <span>🔒 100% Secure & Encrypted Transactions</span>
+        <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span>100% Secure & Encrypted Transactions</span>
         </div>
       </main>
 
