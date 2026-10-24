@@ -10,8 +10,8 @@ export async function getServerSideProps(context: any) {
   let creator = {
     username: cleanUsername,
     name: cleanUsername.charAt(0).toUpperCase() + cleanUsername.slice(1),
-    avatar: `https://onlycrave.com/public/uploads/avatar/${cleanUsername}.jpg`,
-    description: `Welcome to my private world ✨ Explore exclusive content and unreleased updates.`
+    avatar: `https://onlycrave.com/public/img/home_index.svg`,
+    description: `Welcome to my private world. Explore exclusive content and unreleased updates.`
   };
 
   try {
@@ -43,8 +43,14 @@ export async function getServerSideProps(context: any) {
       const ogDesc = getMeta("og:description") || getMeta("description");
       const siteName = getMeta("og:site_name");
 
-      if (ogImage) {
+      if (ogImage && !ogImage.includes("home_index.svg")) {
         creator.avatar = ogImage.startsWith('http') ? ogImage : `https://onlycrave.com${ogImage}`;
+      } else {
+        // Fallback pattern if specific upload avatar tag is nested differently
+        const avatarMatch = text.match(/<meta\s+property=["']og:image["']\s+content=["']([^"']*uploads\/avatar[^"']*)["']/i);
+        if (avatarMatch && avatarMatch[1]) {
+          creator.avatar = avatarMatch[1].trim();
+        }
       }
 
       if (ogDesc) {
@@ -80,7 +86,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
     setActiveButton(type);
     setTimeout(() => {
       window.location.href = actionUrl;
-    }, 400);
+    }, 300);
   };
 
   const jsonLd = {
@@ -98,7 +104,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
 
   return (
     <div style={{ 
-      backgroundColor: '#09090b', 
+      backgroundColor: '#030305', 
       color: '#ffffff', 
       minHeight: '100vh', 
       fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
@@ -109,29 +115,31 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
       justifyContent: 'space-between'
     }}>
       <Head>
-        <title>{creator.name} (@{creator.username}) | Link in Bio</title>
+        <title>{creator.name} (@{creator.username}) | Verified OnlyCrave Hub</title>
         <meta name="description" content={creator.description} />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <meta property="og:title" content={`${creator.name} (@{creator.username})`} />
+        <meta property="og:title" content={`${creator.name} (@{creator.username}) | OnlyCrave`} />
         <meta property="og:description" content={creator.description} />
         <meta property="og:image" content={creator.avatar} />
         <meta property="og:type" content="profile" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:image" content={creator.avatar} />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
-      {/* Background Neon Glow Effects */}
-      <div style={{ position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(227,60,199,0.2) 0%, rgba(10,10,12,0) 70%)', zIndex: 1, pointerEvents: 'none' }} />
-      <div style={{ position: 'absolute', bottom: '10%', right: '-10%', width: '300px', height: '300px', background: 'radial-gradient(circle, rgba(45,223,255,0.15) 0%, rgba(10,10,12,0) 70%)', zIndex: 1, pointerEvents: 'none' }} />
+      {/* Futuristic Neon Mesh Background Glows */}
+      <div style={{ position: 'absolute', top: '-10%', left: '50%', transform: 'translateX(-50%)', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(227,60,199,0.18) 0%, rgba(1,2,253,0.1) 50%, transparent 70%)', filter: 'blur(60px)', zIndex: 1, pointerEvents: 'none' }} />
+      <div style={{ position: 'absolute', bottom: '5%', right: '-10%', width: '350px', height: '350px', background: 'radial-gradient(circle, rgba(45,223,255,0.15) 0%, transparent 70%)', filter: 'blur(70px)', zIndex: 1, pointerEvents: 'none' }} />
 
       {/* Main Container */}
-      <main style={{ maxWidth: '520px', width: '100%', margin: '0 auto', padding: '40px 20px', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <main style={{ maxWidth: '520px', width: '100%', margin: '0 auto', padding: '50px 20px', zIndex: 2, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         
-        {/* Profile Avatar with Glowing Border */}
-        <div style={{ position: 'relative', marginBottom: '20px' }}>
+        {/* Profile Avatar with Cyber Glowing Border */}
+        <div style={{ position: 'relative', marginBottom: '22px' }}>
           <div style={{ 
-            position: 'absolute', inset: '-4px', borderRadius: '50%', 
+            position: 'absolute', inset: '-6px', borderRadius: '50%', 
             background: 'linear-gradient(135deg, #e33cc7, #2ddfff, #0102FD)', 
-            filter: 'blur(8px)', opacity: 0.7 
+            filter: 'blur(10px)', opacity: 0.8 
           }} />
           <img 
             src={creator.avatar} 
@@ -141,43 +149,43 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
             }}
             style={{ 
               position: 'relative',
-              width: '120px', 
-              height: '120px', 
+              width: '130px', 
+              height: '130px', 
               borderRadius: '50%', 
               objectFit: 'cover', 
               border: '3px solid #18181b'
             }} 
           />
           <div style={{ 
-            position: 'absolute', bottom: '2px', right: '2px', 
+            position: 'absolute', bottom: '4px', right: '4px', 
             backgroundColor: '#2ddfff', color: '#000', borderRadius: '50%', 
-            width: '28px', height: '28px', display: 'flex', alignItems: 'center', 
+            width: '30px', height: '30px', display: 'flex', alignItems: 'center', 
             justifyContent: 'center', fontWeight: '900', fontSize: '0.85rem', 
-            border: '3px solid #09090b', zIndex: 3 
+            border: '3px solid #030305', zIndex: 3 
           }}>✓</div>
         </div>
 
         {/* Name & Handle */}
-        <h1 style={{ fontSize: '1.6rem', fontWeight: '900', textAlign: 'center', marginBottom: '4px', letterSpacing: '-0.3px' }}>
+        <h1 style={{ fontSize: '1.8rem', fontWeight: '950', textAlign: 'center', marginBottom: '4px', letterSpacing: '-0.5px' }}>
           {creator.name}
         </h1>
-        <p style={{ color: '#e33cc7', fontSize: '0.95rem', fontWeight: '700', marginBottom: '16px' }}>
+        <p style={{ color: '#e33cc7', fontSize: '0.95rem', fontWeight: '800', marginBottom: '20px', letterSpacing: '0.5px' }}>
           @{creator.username}
         </p>
 
         {/* Bio Badge / Snippet */}
         <div style={{ 
-          backgroundColor: 'rgba(24, 24, 27, 0.7)', 
-          backdropFilter: 'blur(10px)',
+          backgroundColor: 'rgba(24, 24, 27, 0.75)', 
+          backdropFilter: 'blur(15px)',
           border: '1px solid rgba(255, 255, 255, 0.08)', 
-          padding: '16px 20px', 
-          borderRadius: '16px', 
+          padding: '18px 22px', 
+          borderRadius: '20px', 
           textAlign: 'center', 
-          marginBottom: '32px', 
+          marginBottom: '35px', 
           width: '100%',
-          boxShadow: '0 8px 32px rgba(0,0,0,0.3)'
+          boxShadow: '0 15px 35px rgba(0,0,0,0.4)'
         }}>
-          <p style={{ fontSize: '0.9rem', lineHeight: '1.6', opacity: 0.85, margin: 0, display: '-webkit-box', WebkitLineClamp: 4, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          <p style={{ fontSize: '0.92rem', lineHeight: '1.65', opacity: 0.9, margin: 0 }}>
             {creator.description}
           </p>
         </div>
@@ -189,13 +197,14 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
           <button 
             onClick={() => handleRedirect(targetUrl, 'subscribe')}
             style={{ 
-              width: '100%', padding: '18px 20px', borderRadius: '16px', border: 'none', 
+              width: '100%', padding: '18px 22px', borderRadius: '18px', border: 'none', 
               background: 'linear-gradient(135deg, #0102FD 0%, #e33cc7 100%)', 
-              color: '#fff', fontWeight: '900', fontSize: '1rem', cursor: 'pointer', 
-              boxShadow: '0 10px 25px rgba(227, 60, 199, 0.35)', 
-              transition: 'transform 0.15s ease, opacity 0.15s ease',
+              color: '#fff', fontWeight: '900', fontSize: '0.95rem', cursor: 'pointer', 
+              boxShadow: '0 12px 30px rgba(227, 60, 199, 0.35)', 
+              transition: 'transform 0.15s ease',
               transform: activeButton === 'subscribe' ? 'scale(0.97)' : 'scale(1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px'
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px',
+              letterSpacing: '0.5px'
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -211,14 +220,15 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
           <button 
             onClick={() => handleRedirect(`https://your.onlycrave.com/${creator.username}/tip`, 'tip')}
             style={{ 
-              width: '100%', padding: '18px 20px', borderRadius: '16px', 
+              width: '100%', padding: '18px 22px', borderRadius: '18px', 
               border: '2px solid rgba(45, 223, 255, 0.4)', 
-              background: 'rgba(24, 24, 27, 0.6)', 
-              backdropFilter: 'blur(10px)',
-              color: '#fff', fontWeight: '800', fontSize: '1rem', cursor: 'pointer', 
-              transition: 'transform 0.15s ease, border-color 0.15s ease',
+              background: 'rgba(24, 24, 27, 0.65)', 
+              backdropFilter: 'blur(15px)',
+              color: '#fff', fontWeight: '800', fontSize: '0.95rem', cursor: 'pointer', 
+              transition: 'transform 0.15s ease',
               transform: activeButton === 'tip' ? 'scale(0.97)' : 'scale(1)',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px'
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: '24px', paddingRight: '24px',
+              letterSpacing: '0.5px'
             }}
           >
             <span style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#2ddfff' }}>
@@ -235,7 +245,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
           <button 
             onClick={() => handleRedirect(targetUrl, 'chat')}
             style={{ 
-              width: '100%', padding: '16px 20px', borderRadius: '16px', 
+              width: '100%', padding: '16px 22px', borderRadius: '18px', 
               border: '1px solid rgba(255, 255, 255, 0.1)', 
               background: 'rgba(24, 24, 27, 0.4)', 
               color: '#a1a1aa', fontWeight: '700', fontSize: '0.9rem', cursor: 'pointer', 
@@ -252,7 +262,7 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
         </div>
 
         {/* Trust & Security Footer Tag */}
-        <div style={{ marginTop: '40px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
+        <div style={{ marginTop: '45px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.75rem', opacity: 0.5, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase' }}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
@@ -262,8 +272,8 @@ export default function CreatorLinkBio({ creator, targetUrl }: { creator: any, t
       </main>
 
       {/* Footer Branding */}
-      <footer style={{ textAlign: 'center', padding: '20px', opacity: 0.3, fontSize: '0.65rem', fontWeight: 800, letterSpacing: '1.5px', zIndex: 2 }}>
-        POWERED BY ONLYCRAVE // {new Date().getFullYear()}
+      <footer style={{ textAlign: 'center', padding: '25px', opacity: 0.35, fontSize: '0.65rem', fontWeight: 800, letterSpacing: '2px', zIndex: 2 }}>
+        POWERED BY ONLYCRAVE SECURE // {new Date().getFullYear()}
       </footer>
     </div>
   );
