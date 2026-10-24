@@ -136,14 +136,7 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
       alignItems: 'center',
       justifyContent: 'center',
       boxShadow: 'inset 0 2px 4px rgba(255,255,255,0.35), 0 8px 16px rgba(0,0,0,0.3)',
-    };
-
-    const text: React.CSSProperties = {
-      fontSize: '13px',
-      fontWeight: 900,
-      color: '#fff',
-      lineHeight: 1,
-      textShadow: '0 1px 2px rgba(0,0,0,0.35)',
+      overflow: 'hidden',
     };
 
     const map: Record<string, React.CSSProperties> = {
@@ -154,17 +147,50 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
       bitcoin: { background: 'linear-gradient(145deg, #fbbf24, #b45309)' },
     };
 
-    const label: Record<string, string> = {
-      phone: 'M',
-      paypal: 'P',
-      bitpay: 'BP',
-      card: '$',
-      bitcoin: 'B',
+    const renderSvg = () => {
+      switch (type) {
+        case 'phone': // M-Pesa / Mobile Sim/Phone icon
+          return (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+              <line x1="12" y1="18" x2="12.01" y2="18"></line>
+            </svg>
+          );
+        case 'paypal': // PayPal 'PP' monogram SVG
+          return (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 4h6c2 0 3.5 1 3.5 3s-1.5 3-3.5 3H9v6H7V4z"></path>
+              <path d="M11 10h4c2 0 3.5 1 3.5 3s-1.5 3-3.5 3h-4v4H11V10z"></path>
+            </svg>
+          );
+        case 'bitpay': // BitPay 'B' shield / lightning icon
+          return (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 2l9 4v6c0 5.5-3.8 10.7-9 12-5.2-1.3-9-6.5-9-12V6l9-4z"></path>
+              <path d="M9 12h6m-3-3v6"></path>
+            </svg>
+          );
+        case 'card': // Google Pay / Credit Card icon
+          return (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect>
+              <line x1="1" y1="10" x2="23" y2="10"></line>
+            </svg>
+          );
+        case 'bitcoin': // Crypto / Bitcoin symbol
+          return (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 4v16m4-16v16m-4-12h4a3 3 0 0 1 0 6H9m4 0h4a3 3 0 0 1 0 6H9"></path>
+            </svg>
+          );
+        default:
+          return null;
+      }
     };
 
     return (
       <span style={{ ...base, ...map[type] }}>
-        <span style={text}>{label[type]}</span>
+        {renderSvg()}
       </span>
     );
   };
@@ -318,7 +344,7 @@ export default function TipPage({ cpMerchantId }: TipPageProps) {
             style={{background: 'transparent', border: 'none', width: '100%', fontSize: '40px', fontWeight: '900', textAlign: 'center', color: isDark ? '#fff' : '#0102FD', outline: 'none'}}
           />
           <div style={{fontSize: '11px', color: '#888', marginTop: '10px', fontWeight: 'bold'}}>
-             ≈ {localCurrency.symbol} {(Number(amount) * localCurrency.rate).toLocaleString()}
+              ≈ {localCurrency.symbol} {(Number(amount) * localCurrency.rate).toLocaleString()}
           </div>
         </div>
 
